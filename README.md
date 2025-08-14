@@ -123,7 +123,7 @@ stock-market-monitor/
 ### application.properties
 ```properties
 # 服务器端口
-server.port=8080
+server.port=8888
 
 # AKShare API配置
 akshare.base-url=http://localhost:8080/api/public
