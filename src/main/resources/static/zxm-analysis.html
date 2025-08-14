@@ -1,0 +1,4136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能财务分析系统 - 张新民结构性财务分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 确保ECharts tooltip始终在最顶层 */
+        .echarts-tooltip {
+            z-index: 9999 !important;
+        }
+
+        /* 全局tooltip样式 */
+        [data-echarts-tooltip] {
+            z-index: 9999 !important;
+            position: absolute !important;
+        }
+
+        /* 确保所有ECharts相关元素都在最顶层 */
+        .echarts-tooltip,
+        .echarts-tooltip *,
+        [class*="echarts"],
+        [id*="echarts"] {
+            z-index: 9999 !important;
+        }
+
+        /* 特别处理tooltip容器 */
+        .echarts-tooltip {
+            position: absolute !important;
+            z-index: 9999 !important;
+            pointer-events: auto !important;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            margin-top: 12px;
+            margin-bottom: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header .logo {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: logoGlow 3s ease-in-out infinite;
+        }
+
+        .header .logo-icon {
+            font-size: 20px;
+            color: white;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        @keyframes logoGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            }
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 0;
+        }
+
+        .batch-evaluate-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            margin-left: 16px;
+        }
+
+        .batch-evaluate-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+
+
+        .input-section {
+            padding: 24px 24px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .switch-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            justify-content: center;
+        }
+
+        .switch-label {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #10b981;
+            transition: .3s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #3b82f6;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .input-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            color: #374151;
+            box-sizing: border-box;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .input-group input::placeholder {
+            color: #9ca3af;
+        }
+
+        .stock-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 2px solid #3b82f6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .suggestion-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background-color 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .suggestion-item.selected {
+            background-color: #eff6ff;
+        }
+
+        .suggestion-code {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .suggestion-name {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .suggestion-type {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ffffff;
+        }
+
+        .suggestion-type.ashare {
+            background-color: #3b82f6;
+        }
+
+        .suggestion-type.hk {
+            background-color: #10b981;
+        }
+
+        .input-group button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .input-group button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .input-group button:hover::before {
+            left: 100%;
+        }
+
+        .input-group button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .input-group button:active {
+            transform: translateY(0);
+        }
+
+        .input-group button:disabled {
+            background: #9ca3af;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        #flipStoneBtn {
+            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+        }
+
+        #flipStoneBtn:hover {
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+        }
+
+        #batchEvaluateBtn {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+
+        #batchEvaluateBtn:hover {
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 48px 32px;
+            color: #6b7280;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            min-width: 480px;
+            max-width: 580px;
+            box-shadow:
+                0 25px 50px -12px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            animation: fadeInScale 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .loading::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        .loading .loading-spinner {
+            position: relative;
+            width: 72px;
+            height: 72px;
+        }
+
+        .loading .loading-spinner::before,
+        .loading .loading-spinner::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        .loading .loading-spinner::before {
+            width: 72px;
+            height: 72px;
+            border: 3px solid #f1f5f9;
+            box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.05);
+        }
+
+        .loading .loading-spinner::after {
+            width: 72px;
+            height: 72px;
+            border: 3px solid transparent;
+            border-top-color: #3b82f6;
+            border-right-color: #3b82f6;
+            animation: spin 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            box-shadow: 0 0 24px rgba(59, 130, 246, 0.2);
+        }
+
+        .loading .loading-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        .loading .loading-subtext {
+            font-size: 14px;
+            color: #6b7280;
+            opacity: 0.9;
+            max-width: 400px;
+            line-height: 1.5;
+        }
+
+
+
+        .loading .loading-dots {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .loading .loading-dots span {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            animation: dots 1.4s ease-in-out infinite both;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        .loading .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .loading .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        .loading .loading-dots span:nth-child(3) {
+            animation-delay: 0s;
+        }
+
+        .loading .loading-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 16px;
+            max-width: 300px;
+        }
+
+        .loading .loading-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #6b7280;
+            opacity: 0.7;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .loading .loading-step.active {
+            color: #3b82f6;
+            opacity: 1;
+            font-weight: 500;
+        }
+
+        .loading .loading-step-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #6b7280;
+        }
+
+        .loading .loading-step.active .loading-step-icon {
+            background: #3b82f6;
+            color: white;
+            animation: checkmark 0.3s ease-out;
+        }
+
+        @keyframes checkmark {
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes dots {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-tips {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tip-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 6px;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .tip-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .tip-text {
+            font-size: 13px;
+            color: #4b5563;
+            line-height: 1.4;
+        }
+
+        .error {
+            text-align: center;
+            color: #dc2626;
+            padding: 16px 20px;
+            background: #fef2f2;
+            border-radius: 8px;
+            margin: 24px;
+            border-left: 3px solid #dc2626;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            padding: 24px;
+        }
+
+        .chart-row {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-row .chart-wrapper {
+            flex: 1;
+            min-width: 0;
+        }
+
+        @media (max-width: 1200px) {
+            .chart-row {
+                flex-direction: column;
+                gap: 24px;
+            }
+        }
+
+        .chart {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chart:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* 响应式布局 */
+        @media (max-width: 1200px) {
+            .chart-container .flex-row {
+                flex-direction: column;
+            }
+
+            .chart-container .flex-row>div {
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 8px;
+            }
+
+            .header {
+                padding: 24px 16px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .header p {
+                font-size: 0.875rem;
+            }
+
+            .input-section {
+                padding: 24px 16px;
+            }
+
+            .input-group {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .chart {
+                height: 300px;
+            }
+
+            .hero-title {
+                font-size: 1.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 0.875rem;
+            }
+
+            .stats-section {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .tech-highlights {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .stat-number {
+                font-size: 1.5rem;
+            }
+
+            .welcome-section {
+                padding: 32px 16px;
+            }
+        }
+
+        /* 欢迎区域 */
+        .welcome-section {
+            padding: 48px 24px;
+            text-align: center;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="%23e2e8f0"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+            opacity: 0.5;
+        }
+
+        .welcome-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .hero-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            display: block;
+            color: #3b82f6;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .hero-title {
+            font-size: 2rem;
+            color: #1e293b;
+            margin-bottom: 12px;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+            color: #64748b;
+            margin-bottom: 32px;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        .stats-section {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-bottom: 32px;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 16px 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .tech-highlights {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+
+        .highlight-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .highlight-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .highlight-icon {
+            font-size: 1rem;
+            color: #3b82f6;
+        }
+
+        .highlight-text {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .chart-container {
+            animation: slideIn 0.6s ease-out;
+        }
+
+        .chart {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        /* 股票信息展示区域样式 */
+        .stock-info-section {
+            padding: 24px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-bottom: 1px solid #e2e8f0;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        .stock-info-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stock-info-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stock-info-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #1e40af;
+            margin: 0;
+        }
+
+        .stock-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .stock-info-item {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 60px;
+        }
+
+        .stock-info-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+            border-color: #3b82f6;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-weight: 500;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 1rem;
+            color: #1f2937;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .info-value.highlight {
+            color: #059669;
+        }
+
+        .info-value.warning {
+            color: #dc2626;
+        }
+
+        /* 不同信息组的视觉区分 */
+        .stock-info-item.basic-info {
+            border-left: 3px solid #3b82f6;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .stock-info-item.shares-info {
+            border-left: 3px solid #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+        }
+
+        .stock-info-item.market-info {
+            border-left: 3px solid #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .stock-info-item.other-info {
+            border-left: 3px solid #8b5cf6;
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+        }
+
+        /* 全宽信息项样式 */
+        .stock-info-item.full-width {
+            grid-column: 1 / -1;
+            padding: 16px 20px;
+        }
+
+        .stock-info-item.full-width .info-label {
+            margin-bottom: 6px;
+        }
+
+        .stock-info-item.full-width .info-value {
+            margin-bottom: 12px;
+        }
+
+        .stock-info-item.full-width .info-value:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 公司简介部分样式 */
+        .company-intro-section {
+            margin-top: 24px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .company-intro-header {
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .company-intro-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e40af;
+            margin: 0;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .company-intro-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            line-height: 1.6;
+            color: #374151;
+            font-size: 0.95rem;
+            text-align: justify;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .stock-info-grid {
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                gap: 8px;
+            }
+            
+            .stock-info-item {
+                padding: 10px 12px;
+                min-height: 50px;
+            }
+            
+            .stock-info-item.full-width {
+                padding: 14px 16px;
+            }
+            
+            .info-label {
+                font-size: 0.75rem;
+            }
+            
+            .info-value {
+                font-size: 0.9rem;
+            }
+            
+            .company-intro-section {
+                margin-top: 20px;
+            }
+            
+            .company-intro-header h3 {
+                font-size: 1.1rem;
+                padding: 10px 16px;
+            }
+            
+            .company-intro-content {
+                padding: 16px;
+                font-size: 0.9rem;
+            }
+        }
+
+
+
+
+
+        .footer {
+            text-align: center;
+            padding: 16px 24px;
+            color: #6b7280;
+            font-size: 0.875rem;
+            border-top: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-section">
+                <div class="logo">
+                    <span class="logo-icon">📊</span>
+                </div>
+                <h1>智能财务分析系统</h1>
+                <button onclick="triggerBatchEvaluation()" id="batchEvaluateBtn" class="batch-evaluate-btn">批量评分</button>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <div class="switch-wrapper">
+                    <span class="switch-label">按报告期</span>
+                    <label class="switch">
+                        <input type="checkbox" id="analysisSwitch">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="switch-label">按年度</span>
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="stockSymbol" placeholder="请输入股票代码或名称搜索（A股6位：000001，港股5位：00700）"
+                        maxlength="10">
+                    <div id="stockSuggestions" class="stock-suggestions" style="display: none;"></div>
+                </div>
+                <button onclick="analyzeStock()" id="analyzeBtn">开始分析</button>
+                <button onclick="flipStone()" id="flipStoneBtn">翻块石头</button>
+            </div>
+
+        </div>
+
+        <!-- 欢迎区域 -->
+        <div id="welcomeSection" class="welcome-section">
+            <div class="welcome-content">
+                <div class="hero-section">
+                    <div class="hero-icon">📊</div>
+                    <h1 class="hero-title">智能财务分析系统</h1>
+                    <p class="hero-subtitle">基于张新民教授结构性财务分析理论，全面分析A股和港股上市公司财务状况，提供ROE、PE、资产负债结构、盈利能力等多维度分析</p>
+                </div>
+
+                <div class="stats-section">
+                    <div class="stat-item">
+                        <div class="stat-number">2</div>
+                        <div class="stat-label">市场覆盖</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">96</div>
+                        <div class="stat-label">财务指标</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">5</div>
+                        <div class="stat-label">分析维度</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">∞</div>
+                        <div class="stat-label">数据洞察</div>
+                    </div>
+                </div>
+
+                <div class="tech-highlights">
+                    <div class="highlight-item">
+                        <span class="highlight-icon">📈</span>
+                        <span class="highlight-text">A股港股</span>
+                    </div>
+                    <div class="highlight-item">
+                        <span class="highlight-icon">📊</span>
+                        <span class="highlight-text">结构性分析</span>
+                    </div>
+                    <div class="highlight-item">
+                        <span class="highlight-icon">📋</span>
+                        <span class="highlight-text">可视化图表</span>
+                    </div>
+                    <div class="highlight-item">
+                        <span class="highlight-icon">🔍</span>
+                        <span class="highlight-text">多维度指标</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingOverlay"
+            style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;">
+        </div>
+        <div id="loading" class="loading" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">正在分析数据</div>
+            <div class="loading-subtext">请稍候，系统正在获取财务数据并生成分析报告</div>
+            <div class="loading-steps">
+                <div class="loading-step" id="step1">
+                    <div class="loading-step-icon">1</div>
+                    <span>连接数据源</span>
+                </div>
+                <div class="loading-step" id="step2">
+                    <div class="loading-step-icon">2</div>
+                    <span>获取财务数据</span>
+                </div>
+                <div class="loading-step" id="step3">
+                    <div class="loading-step-icon">3</div>
+                    <span>计算分析指标</span>
+                </div>
+                <div class="loading-step" id="step4">
+                    <div class="loading-step-icon">4</div>
+                    <span>生成可视化图表</span>
+                </div>
+            </div>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <!-- 股票基本信息展示区域 -->
+        <div id="stockInfoSection" class="stock-info-section" style="display: none;">
+            <div class="stock-info-content">
+                <div class="stock-info-header">
+                    <h2 id="stockInfoTitle">股票基本信息</h2>
+                </div>
+                <div class="stock-info-grid">
+                    <!-- 基本信息组 -->
+                    <div class="stock-info-item basic-info">
+                        <div class="info-label">股票代码</div>
+                        <div class="info-value" id="stockCode">-</div>
+                    </div>
+                    <div class="stock-info-item basic-info">
+                        <div class="info-label">股票名称</div>
+                        <div class="info-value" id="stockName">-</div>
+                    </div>
+                    <div class="stock-info-item basic-info">
+                        <div class="info-label">最新价格</div>
+                        <div class="info-value" id="stockPrice">-</div>
+                    </div>
+                    <div class="stock-info-item basic-info">
+                        <div class="info-label">所属行业</div>
+                        <div class="info-value" id="stockIndustry">-</div>
+                    </div>
+                    
+                    <!-- 股本信息组 -->
+                    <div class="stock-info-item shares-info">
+                        <div class="info-label">总股本</div>
+                        <div class="info-value" id="stockTotalShares">-</div>
+                    </div>
+                    <div class="stock-info-item shares-info">
+                        <div class="info-label">流通股</div>
+                        <div class="info-value" id="stockCirculatingShares">-</div>
+                    </div>
+                    
+                    <!-- 市值信息组 -->
+                    <div class="stock-info-item market-info">
+                        <div class="info-label">总市值</div>
+                        <div class="info-value" id="stockTotalMarketValue">-</div>
+                    </div>
+                    <div class="stock-info-item market-info">
+                        <div class="info-label">流通市值</div>
+                        <div class="info-value" id="stockCirculatingMarketValue">-</div>
+                    </div>
+                    
+                    <!-- 其他信息组 -->
+                    <div class="stock-info-item other-info">
+                        <div class="info-label">上市时间</div>
+                        <div class="info-value" id="stockListingDate">-</div>
+                    </div>
+                    <div class="stock-info-item other-info">
+                        <div class="info-label">ROE</div>
+                        <div class="info-value" id="stockRoe">-</div>
+                    </div>
+                    <div class="stock-info-item other-info">
+                        <div class="info-label">市盈率</div>
+                        <div class="info-value" id="stockPe">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="chartContainer" class="chart-container" style="display: none;">
+            <div id="analysisChart" class="chart"></div>
+        </div>
+
+        <div class="footer">
+            <p>张新民结构性财务分析系统 | 基于张新民教授财务分析理论</p>
+        </div>
+    </div>
+
+    <script>
+
+        function flipStone() {
+            // 隐藏搜索建议框
+            hideSuggestions();
+
+            // 显示加载状态
+            document.getElementById('loadingOverlay').style.display = 'block';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('chartContainer').style.display = 'none';
+            document.getElementById('stockInfoSection').style.display = 'none';
+            document.getElementById('welcomeSection').style.display = 'none';
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('flipStoneBtn').disabled = true;
+            document.getElementById('batchEvaluateBtn').disabled = true;
+
+            // 重置加载步骤
+            resetLoadingSteps();
+
+            // 开始翻石头专用动画
+            startFlipStoneAnimation();
+
+            // 获取股票列表
+            Promise.all([
+                fetch('http://localhost:8888/api/zxm/stock-list'),
+                fetch('http://localhost:8888/api/zxm/hk-stock-list')
+            ])
+                .then(responses => {
+                    return Promise.all(responses.map(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    }));
+                })
+                .then(([aShareData, hkData]) => {
+                    if (!aShareData || aShareData.length === 0) {
+                        throw new Error('获取A股列表失败');
+                    }
+
+                    // 过滤出A股股票（6位数字代码）
+                    const aShareStocks = aShareData.filter(stock => stock.code && stock.code.length === 6 && /^\d{6}$/.test(stock.code));
+
+                    if (aShareStocks.length === 0) {
+                        throw new Error('没有找到可用的A股股票');
+                    }
+
+                    // 暂时只从A股中随机选择
+                    const randomIndex = Math.floor(Math.random() * aShareStocks.length);
+                    const selectedStock = aShareStocks[randomIndex];
+
+                    console.log('翻石头找到的宝藏股票:', selectedStock);
+
+                    // 更新输入框
+                    document.getElementById('stockSymbol').value = selectedStock.code;
+
+                    // 直接执行分析，使用开始分析时的动画
+                    analyzeStock();
+                })
+                .catch(error => {
+                    completeLoading();
+                    document.getElementById('analyzeBtn').disabled = false;
+                    document.getElementById('flipStoneBtn').disabled = false;
+                    document.getElementById('batchEvaluateBtn').disabled = false;
+                    showError('翻石头失败，请稍后重试');
+                    document.getElementById('welcomeSection').style.display = 'block';
+                });
+        }
+
+        function triggerBatchEvaluation() {
+            // 调用批量评估API
+            fetch('http://localhost:8888/api/batch/evaluate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
+        function analyzeStock(retryCount = 0) {
+            // 隐藏搜索建议框
+            hideSuggestions();
+
+            const symbol = document.getElementById('stockSymbol').value.trim();
+
+            if (!symbol) {
+                showError('请输入股票代码');
+                return;
+            }
+
+            // 判断股票代码类型
+            const isHkStock = symbol.length === 5 && /^\d{5}$/.test(symbol);
+            const isAShareStock = symbol.length === 6 && /^\d{6}$/.test(symbol);
+
+            if (!isHkStock && !isAShareStock) {
+                showError('请输入正确的股票代码：A股为6位数字，港股为5位数字');
+                return;
+            }
+
+            // 显示加载状态（如果还没有显示的话）
+            if (document.getElementById('loadingOverlay').style.display !== 'block') {
+                document.getElementById('loadingOverlay').style.display = 'block';
+                document.getElementById('loading').style.display = 'block';
+                document.querySelector('#loading .loading-text').textContent = `正在分析${isHkStock ? '港股' : 'A股'}数据`;
+                document.querySelector('#loading .loading-subtext').textContent = '系统正在获取财务数据并生成分析报告';
+            }
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('chartContainer').style.display = 'none';
+            document.getElementById('stockInfoSection').style.display = 'none';
+            document.getElementById('welcomeSection').style.display = 'none';
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('flipStoneBtn').disabled = true;
+            document.getElementById('batchEvaluateBtn').disabled = true;
+
+            // 重置加载步骤
+            resetLoadingSteps();
+
+            // 开始加载步骤动画
+            startLoadingSteps();
+
+            if (isHkStock) {
+                // 港股分析逻辑
+                analyzeHkStock(symbol);
+            } else {
+                // A股分析逻辑
+                analyzeAShareStock(symbol);
+            }
+        }
+
+        function analyzeHkStock(stock) {
+            // 并行获取港股财务分析数据、基本信息和换手率分布数据
+            Promise.allSettled([
+                fetch(`http://localhost:8888/api/zxm/hk-financial-analysis?stock=${encodeURIComponent(stock)}`),
+                fetch(`http://localhost:8888/api/zxm/hk-basic-info?stock=${encodeURIComponent(stock)}`),
+                fetch(`http://localhost:8888/api/zxm/hk-turnover-distribution?stock=${encodeURIComponent(stock)}`)
+            ])
+                .then(results => {
+                    const [analysisResult, basicInfoResult, turnoverDistributionResult] = results;
+
+                    completeLoading();
+                    document.getElementById('analyzeBtn').disabled = false;
+                    document.getElementById('flipStoneBtn').disabled = false;
+                    document.getElementById('batchEvaluateBtn').disabled = false;
+
+                    // 处理基本信息结果
+                    if (basicInfoResult.status === 'fulfilled' && basicInfoResult.value.ok) {
+                        basicInfoResult.value.json().then(hkBasicInfo => {
+                            displayHkBasicInfo(hkBasicInfo);
+                        }).catch(error => {
+                            console.warn('港股基本信息解析失败:', error);
+                            // 基本信息失败不影响图表显示
+                        });
+                    } else {
+                        console.warn('港股基本信息获取失败:', basicInfoResult.reason || '网络错误');
+                        // 基本信息失败不影响图表显示
+                    }
+
+                    // 处理财务分析数据结果
+                    if (analysisResult.status === 'fulfilled' && analysisResult.value.ok) {
+                        analysisResult.value.json().then(analysisData => {
+                            if (analysisData.success) {
+                                displayHkAllCharts(analysisData.debtAnalysis, analysisData.assetAnalysis, analysisData.profitDataAnalysis, analysisData.profitRatioAnalysis, analysisData.financialRatioAnalysis, analysisData.cashFlowAnalysis);
+
+                                // 在图表容器创建后，显示换手率分布图表
+                                setTimeout(() => {
+                                    if (turnoverDistributionResult.status === 'fulfilled' && turnoverDistributionResult.value.ok) {
+                                        turnoverDistributionResult.value.json().then(turnoverData => {
+                                            if (turnoverData.success) {
+                                                displayHkTurnoverDistributionChart(turnoverData);
+                                            } else {
+                                                console.warn('港股换手率分布数据获取失败:', turnoverData.message);
+                                            }
+                                        }).catch(error => {
+                                            console.warn('港股换手率分布数据解析失败:', error);
+                                        });
+                                    } else {
+                                        console.warn('港股换手率分布数据获取失败:', turnoverDistributionResult.reason || '网络错误');
+                                    }
+                                }, 100); // 延迟100ms确保容器已创建
+                            } else {
+                                showError(analysisData.message || '港股分析失败');
+                                document.getElementById('welcomeSection').style.display = 'block';
+                            }
+                        }).catch(error => {
+                            console.error('港股财务分析数据解析失败:', error);
+                            showError('港股财务分析数据解析失败');
+                            document.getElementById('welcomeSection').style.display = 'block';
+                        });
+                    } else {
+                        console.error('港股财务分析数据获取失败:', analysisResult.reason || '网络错误');
+                        showError('港股财务分析数据获取失败，请稍后重试');
+                        document.getElementById('welcomeSection').style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    completeLoading();
+                    document.getElementById('analyzeBtn').disabled = false;
+                    document.getElementById('flipStoneBtn').disabled = false;
+                    document.getElementById('batchEvaluateBtn').disabled = false;
+                    showError('港股数据获取失败，请稍后重试');
+                    document.getElementById('welcomeSection').style.display = 'block';
+                });
+        }
+
+        function analyzeAShareStock(symbol) {
+            // 并行获取股票基本信息、财务分析数据、市盈率数据、换手率分布数据和股东户数数据
+            Promise.all([
+                fetch(`http://localhost:8888/api/zxm/stock-info?symbol=${encodeURIComponent(symbol)}`),
+                fetch(`http://localhost:8888/api/zxm/comprehensive-analysis?symbol=${encodeURIComponent(symbol)}`),
+                fetch(`http://localhost:8888/api/zxm/valuation-data?symbol=${encodeURIComponent(symbol)}`),
+                fetch(`http://localhost:8888/api/zxm/turnover-distribution?symbol=${encodeURIComponent(symbol)}`),
+                fetch(`http://localhost:8888/api/zxm/shareholder-data?symbol=${encodeURIComponent(symbol)}`)
+            ])
+                .then(responses => {
+                    return Promise.all(responses.map(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    }));
+                })
+                .then(([stockInfo, analysisData, valuationData, turnoverDistributionData, shareholderData]) => {
+                    completeLoading();
+                    document.getElementById('analyzeBtn').disabled = false;
+                    document.getElementById('flipStoneBtn').disabled = false;
+                    document.getElementById('batchEvaluateBtn').disabled = false;
+
+                    // 显示股票基本信息
+                    displayStockInfo(stockInfo);
+
+                    // 显示财务分析数据
+                    if (analysisData.success) {
+                        // 构建valuationAnalysis、turnoverDistributionAnalysis和shareholderAnalysis对象
+                        const valuationAnalysis = {
+                            symbol: symbol,
+                            valuationData: valuationData,
+                            success: true
+                        };
+
+                        const turnoverDistributionAnalysis = {
+                            symbol: symbol,
+                            turnoverDistributionData: turnoverDistributionData,
+                            success: true
+                        };
+
+                        const shareholderAnalysis = {
+                            symbol: symbol,
+                            shareholderData: shareholderData,
+                            success: true
+                        };
+
+                        displayAllCharts(analysisData.debtAnalysis,
+                            analysisData.assetAnalysis,
+                            analysisData.profitDataAnalysis,
+                            analysisData.profitRatioAnalysis,
+                            analysisData.bloodDataAnalysis,
+                            analysisData.bloodRatioAnalysis,
+                            analysisData.financialRatioAnalysis,
+                            valuationAnalysis,
+                            turnoverDistributionAnalysis,
+                            shareholderAnalysis);
+                    } else {
+                        showError(analysisData.message || '分析失败');
+                        document.getElementById('welcomeSection').style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    completeLoading();
+                    document.getElementById('analyzeBtn').disabled = false;
+                    document.getElementById('flipStoneBtn').disabled = false;
+                    document.getElementById('batchEvaluateBtn').disabled = false;
+                    showError('数据获取失败，请稍后重试');
+                    document.getElementById('welcomeSection').style.display = 'block';
+                });
+        }
+
+        function displayStockInfo(stockInfo) {
+            // 更新股票信息标题
+            document.getElementById('stockInfoTitle').textContent = `${stockInfo.name || stockInfo.code} - 基本信息`;
+
+            // 更新各个信息字段
+            document.getElementById('stockCode').textContent = stockInfo.code || '-';
+            document.getElementById('stockName').textContent = stockInfo.name || '-';
+            document.getElementById('stockPrice').textContent = stockInfo.latestPrice ? `¥${stockInfo.latestPrice}` : '-';
+            document.getElementById('stockIndustry').textContent = stockInfo.industry || '-';
+            document.getElementById('stockTotalShares').textContent = formatNumber(stockInfo.totalShares);
+            document.getElementById('stockCirculatingShares').textContent = formatNumber(stockInfo.circulatingShares);
+            document.getElementById('stockTotalMarketValue').textContent = formatMarketValue(stockInfo.totalMarketValue);
+            document.getElementById('stockCirculatingMarketValue').textContent = formatMarketValue(stockInfo.circulatingMarketValue);
+            document.getElementById('stockListingDate').textContent = formatDate(stockInfo.listingDate);
+            document.getElementById('stockRoe').textContent = stockInfo.roe || '-';
+            document.getElementById('stockPe').textContent = stockInfo.pe || '-';
+
+            // 显示股票信息区域
+            document.getElementById('stockInfoSection').style.display = 'block';
+        }
+
+        function displayHkStockInfo(analysisData) {
+            // 更新港股信息标题
+            document.getElementById('stockInfoTitle').textContent = `${analysisData.stockName || analysisData.stockCode} - 港股基本信息`;
+
+            // 更新各个信息字段
+            document.getElementById('stockCode').textContent = analysisData.stockCode || '-';
+            document.getElementById('stockName').textContent = analysisData.stockName || '-';
+            document.getElementById('stockPrice').textContent = '-'; // 港股暂无实时价格
+            document.getElementById('stockIndustry').textContent = '-'; // 港股暂无行业信息
+            document.getElementById('stockTotalShares').textContent = '-'; // 港股暂无总股本
+            document.getElementById('stockCirculatingShares').textContent = '-'; // 港股暂无流通股本
+            document.getElementById('stockTotalMarketValue').textContent = '-'; // 港股暂无市值
+            document.getElementById('stockCirculatingMarketValue').textContent = '-'; // 港股暂无流通市值
+            document.getElementById('stockListingDate').textContent = formatDate(analysisData.reportPeriod);
+            document.getElementById('stockRoe').textContent = '-'; // 港股暂无ROE
+            document.getElementById('stockPe').textContent = '-'; // 港股暂无PE
+
+            // 显示股票信息区域
+            document.getElementById('stockInfoSection').style.display = 'block';
+        }
+
+        function formatNumber(value) {
+            if (!value) return '-';
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+
+            // 过亿的数字显示为亿单位，保留两位小数
+            if (num >= 1e8) {
+                return (num / 1e8).toFixed(2) + '亿';
+            }
+            // 过万的数字显示为万单位，保留两位小数
+            else if (num >= 1e4) {
+                return (num / 1e4).toFixed(2) + '万';
+            }
+            // 小于1万的数字，如果是整数则显示整数，否则保留两位小数
+            else {
+                if (Number.isInteger(num)) {
+                    return num.toLocaleString();
+                } else {
+                    return num.toFixed(2);
+                }
+            }
+        }
+
+        function formatMarketValue(value) {
+            if (!value) return '-';
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+
+            // 过万亿的市值显示为万亿单位，保留两位小数
+            if (num >= 1e12) {
+                return '¥' + (num / 1e12).toFixed(2) + '万亿';
+            }
+            // 过亿的市值显示为亿单位，保留两位小数
+            else if (num >= 1e8) {
+                return '¥' + (num / 1e8).toFixed(2) + '亿';
+            }
+            // 过万的市值显示为万单位，保留两位小数
+            else if (num >= 1e4) {
+                return '¥' + (num / 1e4).toFixed(2) + '万';
+            }
+            // 小于1万的市值，如果是整数则显示整数，否则保留两位小数
+            else {
+                if (Number.isInteger(num)) {
+                    return '¥' + num.toLocaleString();
+                } else {
+                    return '¥' + num.toFixed(2);
+                }
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            if (dateStr.length === 8) {
+                return dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8);
+            }
+            return dateStr;
+        }
+
+        function displayAllCharts(debtData, assetData, profitDataData, profitRatioData, bloodDataData, bloodRatioData, financialRatioData, valuationData, turnoverDistributionData, shareholderData) {
+            // 保存数据到全局变量
+            globalAShareAnalysisData = {
+                debtData, assetData, profitDataData, profitRatioData, bloodDataData, bloodRatioData, financialRatioData, valuationData, turnoverDistributionData, shareholderData
+            };
+            
+            // 检查数据
+            const debtRatios = debtData && debtData.yearlyRatios ? debtData.yearlyRatios : null;
+            const assetRatios = assetData && assetData.yearlyRatios ? assetData.yearlyRatios : null;
+            const profitDataRatios = profitDataData && profitDataData.yearlyRatios ? profitDataData.yearlyRatios : null;
+            const profitRatioRatios = profitRatioData && profitRatioData.yearlyRatios ? profitRatioData.yearlyRatios : null;
+            const bloodDataDatas = bloodDataData && bloodDataData.yearlyDatas ? bloodDataData.yearlyDatas : null;
+            const bloodRatioRatios = bloodRatioData && bloodRatioData.yearlyRatios ? bloodRatioData.yearlyRatios : null;
+            const financialRatioRatios = financialRatioData && financialRatioData.yearlyRatios ? financialRatioData.yearlyRatios : null;
+
+            // 只要有任一数据存在就继续显示
+            const hasAnyData = (debtRatios && Object.keys(debtRatios).length > 0) ||
+                (assetRatios && Object.keys(assetRatios).length > 0) ||
+                (profitDataRatios && Object.keys(profitDataRatios).length > 0) ||
+                (profitRatioRatios && Object.keys(profitRatioRatios).length > 0) ||
+                (bloodDataDatas && Object.keys(bloodDataDatas).length > 0) ||
+                (bloodRatioRatios && Object.keys(bloodRatioRatios).length > 0) ||
+                (financialRatioRatios && Object.keys(financialRatioRatios).length > 0);
+
+            if (!hasAnyData) {
+                showError('未找到该股票的财务数据');
+                document.getElementById('welcomeSection').style.display = 'block';
+                return;
+            }
+
+            // 创建图表容器 - 两列布局
+            const chartContainer = document.getElementById('chartContainer');
+            let chartHtml = '';
+
+            // 第一行：负债结构 + 资产结构
+            if ((debtRatios && Object.keys(debtRatios).length > 0) ||
+                (assetRatios && Object.keys(assetRatios).length > 0)) {
+                chartHtml += `<div class="chart-row">`;
+
+                if (debtRatios && Object.keys(debtRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="debtChart" class="chart"></div>
+                    </div>`;
+                }
+
+                if (assetRatios && Object.keys(assetRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="assetChart" class="chart"></div>
+                    </div>`;
+                }
+
+                chartHtml += `</div>`;
+            }
+
+            // 第二行：利润表数据 + 财务比率
+            if ((profitDataRatios && Object.keys(profitDataRatios).length > 0) ||
+                (profitRatioRatios && Object.keys(profitRatioRatios).length > 0)) {
+                chartHtml += `<div class="chart-row">`;
+
+                if (profitDataRatios && Object.keys(profitDataRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="profitDataChart" class="chart"></div>
+                    </div>`;
+                }
+
+                if (profitRatioRatios && Object.keys(profitRatioRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="profitRatioChart" class="chart"></div>
+                    </div>`;
+                }
+
+                chartHtml += `</div>`;
+            }
+
+            // 第三行：财务比率分析 + 造血能力比率
+            if ((financialRatioRatios && Object.keys(financialRatioRatios).length > 0) ||
+                (bloodRatioRatios && Object.keys(bloodRatioRatios).length > 0)) {
+                chartHtml += `<div class="chart-row">`;
+
+                if (financialRatioRatios && Object.keys(financialRatioRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="financialRatioChart" class="chart"></div>
+                    </div>`;
+                }
+
+                if (bloodRatioRatios && Object.keys(bloodRatioRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="bloodRatioChart" class="chart"></div>
+                    </div>`;
+                }
+
+                chartHtml += `</div>`;
+            }
+
+            // 第四行：造血能力数据
+            if (bloodDataDatas && Object.keys(bloodDataDatas).length > 0) {
+                chartHtml += `<div class="chart-row">`;
+                chartHtml += `<div class="chart-wrapper">
+                    <div id="bloodDataChart" class="chart"></div>
+                </div>`;
+                chartHtml += `</div>`;
+            }
+
+            // 第五行：市盈率数据
+            if (valuationData && valuationData.valuationData && valuationData.valuationData.length > 0) {
+                chartHtml += `<div class="chart-row">`;
+                chartHtml += `<div class="chart-wrapper">
+                    <div id="valuationChart" class="chart"></div>
+                </div>`;
+                chartHtml += `</div>`;
+            }
+
+            // 第六行：换手率分布数据
+            if (turnoverDistributionData && turnoverDistributionData.turnoverDistributionData && turnoverDistributionData.turnoverDistributionData.success) {
+                chartHtml += `<div class="chart-row">`;
+                chartHtml += `<div class="chart-wrapper">
+                    <div id="turnoverDistributionChart" class="chart"></div>
+                </div>`;
+                chartHtml += `</div>`;
+            }
+
+            // 第七行：股东户数数据
+            if (shareholderData && shareholderData.shareholderData && shareholderData.shareholderData.success && shareholderData.shareholderData.shareholderData && shareholderData.shareholderData.shareholderData.length > 0) {
+                chartHtml += `<div class="chart-row">`;
+                chartHtml += `<div class="chart-wrapper">
+                    <div id="shareholderChart" class="chart"></div>
+                </div>`;
+                chartHtml += `</div>`;
+            }
+
+            chartContainer.innerHTML = chartHtml;
+
+            // 获取当前switch状态
+            const analysisSwitch = document.getElementById('analysisSwitch');
+            const useYearlyData = analysisSwitch ? analysisSwitch.checked : false;
+
+            // 显示负债结构图表
+            if (debtRatios && Object.keys(debtRatios).length > 0) {
+                try {
+                    displayDebtChart(debtData, useYearlyData);
+                } catch (e) {
+                    console.warn('负债图表显示失败:', e);
+                }
+            }
+
+            // 显示资产结构图表
+            if (assetRatios && Object.keys(assetRatios).length > 0) {
+                try {
+                    displayAssetChart(assetData, useYearlyData);
+                } catch (e) {
+                    console.warn('资产图表显示失败:', e);
+                }
+            }
+
+            // 显示利润表数据图表
+            if (profitDataRatios && Object.keys(profitDataRatios).length > 0) {
+                try {
+                    displayProfitDataChart(profitDataData, useYearlyData);
+                } catch (e) {
+                    console.warn('利润表数据图表显示失败:', e);
+                }
+            }
+
+            // 显示利润表比率图表
+            if (profitRatioRatios && Object.keys(profitRatioRatios).length > 0) {
+                try {
+                    displayProfitRatioChart(profitRatioData, useYearlyData);
+                } catch (e) {
+                    console.warn('财务比率图表显示失败:', e);
+                }
+            }
+
+            // 显示造血能力和输血能力数据图表
+            if (bloodDataDatas && Object.keys(bloodDataDatas).length > 0) {
+                try {
+                    displayBloodDataChart(bloodDataData, useYearlyData);
+                } catch (e) {
+                    console.warn('造血能力数据图表显示失败:', e);
+                }
+            }
+
+            // 显示财务比率图表
+            if (financialRatioRatios && Object.keys(financialRatioRatios).length > 0) {
+                try {
+                    displayFinancialRatioChart(financialRatioData, useYearlyData);
+                } catch (e) {
+                    console.warn('财务比率图表显示失败:', e);
+                }
+            }
+
+            // 显示造血能力和输血能力比率图表
+            if (bloodRatioRatios && Object.keys(bloodRatioRatios).length > 0) {
+                try {
+                    displayBloodRatioChart(bloodRatioData, useYearlyData);
+                } catch (e) {
+                    console.warn('造血能力比率图表显示失败:', e);
+                }
+            }
+
+            // 显示市盈率图表
+            if (valuationData && valuationData.valuationData && valuationData.valuationData.length > 0) {
+                try {
+                    displayValuationChart(valuationData.valuationData);
+                } catch (e) {
+                    console.warn('市盈率图表显示失败:', e);
+                }
+            }
+
+            // 显示换手率分布图表
+            if (turnoverDistributionData && turnoverDistributionData.turnoverDistributionData && turnoverDistributionData.turnoverDistributionData.success) {
+                try {
+                    displayTurnoverDistributionChart(turnoverDistributionData.turnoverDistributionData);
+                } catch (e) {
+                    console.warn('换手率分布图表显示失败:', e);
+                }
+            }
+
+            // 显示股东户数图表
+            if (shareholderData && shareholderData.shareholderData && shareholderData.shareholderData.success && shareholderData.shareholderData.shareholderData && shareholderData.shareholderData.shareholderData.length > 0) {
+                try {
+                    displayShareholderChart(shareholderData.shareholderData);
+                } catch (e) {
+                    console.warn('股东户数图表显示失败:', e);
+                }
+            }
+
+            chartContainer.style.display = 'block';
+
+            // 确保图表正确渲染
+            setTimeout(() => {
+                if (window.debtChart && typeof window.debtChart.resize === 'function') {
+                    window.debtChart.resize();
+                }
+                if (window.assetChart && typeof window.assetChart.resize === 'function') {
+                    window.assetChart.resize();
+                }
+                if (window.profitDataChart && typeof window.profitDataChart.resize === 'function') {
+                    window.profitDataChart.resize();
+                }
+                if (window.profitRatioChart && typeof window.profitRatioChart.resize === 'function') {
+                    window.profitRatioChart.resize();
+                }
+                if (window.bloodDataChart && typeof window.bloodDataChart.resize === 'function') {
+                    window.bloodDataChart.resize();
+                }
+                if (window.bloodRatioChart && typeof window.bloodRatioChart.resize === 'function') {
+                    window.bloodRatioChart.resize();
+                }
+                if (window.financialRatioChart && typeof window.financialRatioChart.resize === 'function') {
+                    window.financialRatioChart.resize();
+                }
+                if (window.valuationChart && typeof window.valuationChart.resize === 'function') {
+                    window.valuationChart.resize();
+                }
+                if (window.turnoverDistributionChart && typeof window.turnoverDistributionChart.resize === 'function') {
+                    window.turnoverDistributionChart.resize();
+                }
+                if (window.shareholderChart && typeof window.shareholderChart.resize === 'function') {
+                    window.shareholderChart.resize();
+                }
+            }, 100);
+        }
+
+        function displayDebtChart(data, useYearlyData = false) {
+            if (!data || !data.yearlyRatios) {
+                console.warn('负债数据为空');
+                return;
+            }
+            
+            let yearlyRatios, periods;
+            
+            if (useYearlyData) {
+                // 按年度模式：提取年度数据
+                const yearlyData = {};
+                Object.keys(data.yearlyRatios).forEach(period => {
+                    const year = period.split('-')[0]; // 提取年份
+                    if (!yearlyData[year]) {
+                        yearlyData[year] = {};
+                    }
+                    // 合并同一年份的数据（取最新报告期的数据）
+                    Object.keys(data.yearlyRatios[period]).forEach(indicator => {
+                        yearlyData[year][indicator] = data.yearlyRatios[period][indicator];
+                    });
+                });
+                yearlyRatios = yearlyData;
+                periods = Object.keys(yearlyData).sort();
+            } else {
+                // 按报告期模式：保持原有逻辑
+                yearlyRatios = data.yearlyRatios;
+                periods = Object.keys(yearlyRatios).sort();
+            }
+
+            const totalDebtData = [];
+            const operatingDebtData = [];
+            const financialDebtData = [];
+            const currentDebtData = [];
+            const nonCurrentDebtData = [];
+
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                totalDebtData.push(ratios.totalDebtRatio != null ? parseFloat((ratios.totalDebtRatio * 100).toFixed(2)) : null);
+                operatingDebtData.push(ratios.operatingDebtRatio != null ? parseFloat((ratios.operatingDebtRatio * 100).toFixed(2)) : null);
+                financialDebtData.push(ratios.financialDebtRatio != null ? parseFloat((ratios.financialDebtRatio * 100).toFixed(2)) : null);
+                currentDebtData.push(ratios.currentDebtRatio != null ? parseFloat((ratios.currentDebtRatio * 100).toFixed(2)) : null);
+                nonCurrentDebtData.push(ratios.nonCurrentDebtRatio != null ? parseFloat((ratios.nonCurrentDebtRatio * 100).toFixed(2)) : null);
+            });
+
+            const series = [
+                { name: '总负债率', data: totalDebtData, color: '#e74c3c' },
+                { name: '经营性负债率', data: operatingDebtData, color: '#3498db' },
+                { name: '金融性负债率', data: financialDebtData, color: '#2ecc71' },
+                { name: '流动负债率', data: currentDebtData, color: '#f39c12' },
+                { name: '非流动负债率', data: nonCurrentDebtData, color: '#9b59b6' }
+            ];
+
+            const title = useYearlyData ? `${data.symbol} 负债结构分析（按年度）` : `${data.symbol} 负债结构分析`;
+            createChart('debtChart', title, periods, series, true);
+        }
+
+        function displayAssetChart(data, useYearlyData = false) {
+            if (!data || !data.yearlyRatios) {
+                console.warn('资产数据为空');
+                return;
+            }
+            
+            let yearlyRatios, periods;
+            
+            if (useYearlyData) {
+                // 按年度模式：提取年度数据
+                const yearlyData = {};
+                Object.keys(data.yearlyRatios).forEach(period => {
+                    const year = period.split('-')[0]; // 提取年份
+                    if (!yearlyData[year]) {
+                        yearlyData[year] = {};
+                    }
+                    // 合并同一年份的数据（取最新报告期的数据）
+                    Object.keys(data.yearlyRatios[period]).forEach(indicator => {
+                        yearlyData[year][indicator] = data.yearlyRatios[period][indicator];
+                    });
+                });
+                yearlyRatios = yearlyData;
+                periods = Object.keys(yearlyData).sort();
+            } else {
+                // 按报告期模式：保持原有逻辑
+                yearlyRatios = data.yearlyRatios;
+                periods = Object.keys(yearlyRatios).sort();
+            }
+
+            // 动态获取所有资产项目
+            const allAssetItems = new Set();
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                if (ratios) {
+                    Object.keys(ratios).forEach(key => {
+                        allAssetItems.add(key);
+                    });
+                }
+            });
+
+            // 为每个资产项目创建数据数组
+            const assetDataMap = {};
+            const colors = [
+                '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+                '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
+                '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9', '#22c55e',
+                '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
+                '#dc2626', '#7c3aed', '#059669', '#d97706', '#be185d',
+                '#0891b2', '#65a30d', '#ea580c', '#9333ea', '#0d9488'
+            ];
+
+            // 随机打乱颜色数组，确保颜色分配更加多样化
+            const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+
+            allAssetItems.forEach((item, index) => {
+                assetDataMap[item] = {
+                    name: item,
+                    data: [],
+                    color: shuffledColors[index % shuffledColors.length]
+                };
+            });
+
+            // 填充数据
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                allAssetItems.forEach(item => {
+                    const value = ratios && ratios[item] != null ? parseFloat((ratios[item] * 100).toFixed(2)) : null;
+                    assetDataMap[item].data.push(value);
+                });
+            });
+
+            // 转换为series格式
+            const series = Object.values(assetDataMap);
+
+            // 调试：打印颜色分配情况
+            console.log('资产图表颜色分配:', series.map(s => ({ name: s.name, color: s.color })));
+
+            const title = useYearlyData ? `${data.symbol} 资产结构分析（按年度）` : `${data.symbol} 资产结构分析`;
+            createChart('assetChart', title, periods, series, true);
+        }
+
+        function displayProfitDataChart(data, useYearlyData = false) {
+            if (!data || !data.yearlyRatios) {
+                console.warn('利润表数据为空');
+                return;
+            }
+            
+            let yearlyRatios, periods;
+            
+            if (useYearlyData) {
+                // 按年度模式：提取年度数据
+                const yearlyData = {};
+                Object.keys(data.yearlyRatios).forEach(period => {
+                    const year = period.split('-')[0]; // 提取年份
+                    if (!yearlyData[year]) {
+                        yearlyData[year] = {};
+                    }
+                    // 合并同一年份的数据（取最新报告期的数据）
+                    Object.keys(data.yearlyRatios[period]).forEach(indicator => {
+                        yearlyData[year][indicator] = data.yearlyRatios[period][indicator];
+                    });
+                });
+                yearlyRatios = yearlyData;
+                periods = Object.keys(yearlyData).sort();
+            } else {
+                // 按报告期模式：保持原有逻辑
+                yearlyRatios = data.yearlyRatios;
+                periods = Object.keys(yearlyRatios).sort();
+            }
+
+            // 动态获取所有利润表数据项目
+            const allProfitDataItems = new Set();
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                if (ratios) {
+                    Object.keys(ratios).forEach(key => {
+                        allProfitDataItems.add(key);
+                    });
+                }
+            });
+
+            // 为每个项目创建数据数组
+            const profitDataMap = {};
+            const colors = [
+                '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+                '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
+                '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9', '#22c55e',
+                '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'
+            ];
+
+            // 随机打乱颜色数组，确保颜色分配更加多样化
+            const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+
+            allProfitDataItems.forEach((item, index) => {
+                profitDataMap[item] = {
+                    name: item,
+                    data: [],
+                    color: shuffledColors[index % shuffledColors.length]
+                };
+            });
+
+            // 填充数据
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                allProfitDataItems.forEach(item => {
+                    // 对于利润表数据，直接显示数值，不转换为百分比
+                    const value = ratios && ratios[item] != null ? parseFloat(ratios[item].toFixed(2)) : null;
+                    profitDataMap[item].data.push(value);
+                });
+            });
+
+            // 转换为series格式
+            const series = Object.values(profitDataMap);
+
+            const title = useYearlyData ? `${data.symbol} 利润表数据分析（按年度）` : `${data.symbol} 利润表数据分析`;
+            createChart('profitDataChart', title, periods, series, false);
+        }
+
+        function displayProfitRatioChart(data, useYearlyData = false) {
+            if (!data || !data.yearlyRatios) {
+                console.warn('财务比率数据为空');
+                return;
+            }
+            
+            let yearlyRatios, periods;
+            
+            if (useYearlyData) {
+                // 按年度模式：提取年度数据
+                const yearlyData = {};
+                Object.keys(data.yearlyRatios).forEach(period => {
+                    const year = period.split('-')[0]; // 提取年份
+                    if (!yearlyData[year]) {
+                        yearlyData[year] = {};
+                    }
+                    // 合并同一年份的数据（取最新报告期的数据）
+                    Object.keys(data.yearlyRatios[period]).forEach(indicator => {
+                        yearlyData[year][indicator] = data.yearlyRatios[period][indicator];
+                    });
+                });
+                yearlyRatios = yearlyData;
+                periods = Object.keys(yearlyData).sort();
+            } else {
+                // 按报告期模式：保持原有逻辑
+                yearlyRatios = data.yearlyRatios;
+                periods = Object.keys(yearlyRatios).sort();
+            }
+
+            // 动态获取所有财务比率项目
+            const allProfitRatioItems = new Set();
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                if (ratios) {
+                    Object.keys(ratios).forEach(key => {
+                        allProfitRatioItems.add(key);
+                    });
+                }
+            });
+
+            // 为每个项目创建数据数组
+            const profitRatioMap = {};
+            const colors = [
+                '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+                '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
+                '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9', '#22c55e',
+                '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'
+            ];
+
+            // 随机打乱颜色数组，确保颜色分配更加多样化
+            const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+
+            allProfitRatioItems.forEach((item, index) => {
+                profitRatioMap[item] = {
+                    name: item,
+                    data: [],
+                    color: shuffledColors[index % shuffledColors.length]
+                };
+            });
+
+            // 填充数据
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                allProfitRatioItems.forEach(item => {
+                    const value = ratios && ratios[item] != null ? parseFloat((ratios[item] * 100).toFixed(2)) : null;
+                    profitRatioMap[item].data.push(value);
+                });
+            });
+
+            // 转换为series格式
+            const series = Object.values(profitRatioMap);
+
+            const title = useYearlyData ? `${data.symbol} 利润分析（按年度）` : `${data.symbol} 利润分析`;
+            createChart('profitRatioChart', title, periods, series, true);
+        }
+
+        function displayBloodDataChart(data) {
+            if (!data || !data.yearlyDatas) {
+                console.warn('造血能力数据为空');
+                return;
+            }
+            const yearlyDatas = data.yearlyDatas;
+            const periods = Object.keys(yearlyDatas).sort();
+
+            // 动态获取所有造血能力项目
+            const allBloodDataItems = new Set();
+            periods.forEach(period => {
+                const datas = yearlyDatas[period];
+                if (datas) {
+                    Object.keys(datas).forEach(key => {
+                        allBloodDataItems.add(key);
+                    });
+                }
+            });
+
+            // 为每个项目创建数据数组
+            const bloodDataMap = {};
+            const colors = [
+                '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+                '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
+                '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9', '#22c55e',
+                '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'
+            ];
+
+            // 随机打乱颜色数组，确保颜色分配更加多样化
+            const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+
+            allBloodDataItems.forEach((item, index) => {
+                bloodDataMap[item] = {
+                    name: item,
+                    data: [],
+                    color: shuffledColors[index % shuffledColors.length]
+                };
+            });
+
+            // 填充数据
+            periods.forEach(period => {
+                const datas = yearlyDatas[period];
+                allBloodDataItems.forEach(item => {
+                    // 对于造血能力数据，直接显示数值，不转换为百分比
+                    const value = datas && datas[item] != null ? parseFloat(datas[item].toFixed(2)) : null;
+                    bloodDataMap[item].data.push(value);
+                });
+            });
+
+            // 转换为series格式
+            const series = Object.values(bloodDataMap);
+
+            createChart('bloodDataChart', `${data.symbol} 造血能力和输血能力数据（绝对金额）`, periods, series, false);
+        }
+
+        function displayFinancialRatioChart(data) {
+            if (!data || !data.yearlyRatios) {
+                console.warn('财务比率数据为空');
+                return;
+            }
+            const yearlyRatios = data.yearlyRatios;
+            const periods = Object.keys(yearlyRatios).sort();
+
+            // 动态获取所有财务比率项目
+            const allFinancialRatioItems = new Set();
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                if (ratios) {
+                    Object.keys(ratios).forEach(key => {
+                        allFinancialRatioItems.add(key);
+                    });
+                }
+            });
+
+            // 为每个项目创建数据数组
+            const financialRatioMap = {};
+            const colors = [
+                '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+                '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
+                '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9', '#22c55e',
+                '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'
+            ];
+
+            // 随机打乱颜色数组，确保颜色分配更加多样化
+            const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+
+            allFinancialRatioItems.forEach((item, index) => {
+                financialRatioMap[item] = {
+                    name: item,
+                    data: [],
+                    color: shuffledColors[index % shuffledColors.length]
+                };
+            });
+
+            // 填充数据
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                allFinancialRatioItems.forEach(item => {
+                    let value = ratios && ratios[item] != null ? parseFloat((ratios[item] * 100).toFixed(2)) : null;
+                    // 处理Infinity和NaN的情况
+                    if (value === Infinity || value === -Infinity || isNaN(value)) {
+                        value = null;
+                    }
+                    financialRatioMap[item].data.push(value);
+                });
+            });
+
+            // 转换为series格式
+            const series = Object.values(financialRatioMap);
+
+            createChart('financialRatioChart', `${data.symbol} 财务比率分析`, periods, series, true);
+        }
+
+        function displayBloodRatioChart(data) {
+            if (!data || !data.yearlyRatios) {
+                console.warn('造血能力比率数据为空');
+                return;
+            }
+            const yearlyRatios = data.yearlyRatios;
+            const periods = Object.keys(yearlyRatios).sort();
+
+            // 动态获取所有造血能力项目
+            const allBloodRatioItems = new Set();
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                if (ratios) {
+                    Object.keys(ratios).forEach(key => {
+                        allBloodRatioItems.add(key);
+                    });
+                }
+            });
+
+            // 为每个项目创建数据数组
+            const bloodRatioMap = {};
+            const colors = [
+                '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+                '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
+                '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9', '#22c55e',
+                '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'
+            ];
+
+            // 随机打乱颜色数组，确保颜色分配更加多样化
+            const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+
+            allBloodRatioItems.forEach((item, index) => {
+                bloodRatioMap[item] = {
+                    name: item,
+                    data: [],
+                    color: shuffledColors[index % shuffledColors.length]
+                };
+            });
+
+            // 填充数据
+            periods.forEach(period => {
+                const ratios = yearlyRatios[period];
+                allBloodRatioItems.forEach(item => {
+                    // 对于造血能力比率，转换为百分比显示
+                    const value = ratios && ratios[item] != null ? parseFloat((ratios[item] * 100).toFixed(2)) : null;
+                    bloodRatioMap[item].data.push(value);
+                });
+            });
+
+            // 转换为series格式
+            const series = Object.values(bloodRatioMap);
+
+            createChart('bloodRatioChart', `${data.symbol} 造血能力和输血能力占比分析`, periods, series, true);
+        }
+
+        function createChart(containerId, title, periods, series, showPercentage = true) {
+            const chartDom = document.getElementById(containerId);
+            if (!chartDom) {
+                console.error(`图表容器 ${containerId} 不存在`);
+                return;
+            }
+
+            // 检查并销毁已存在的图表实例
+            if (window[containerId] && typeof window[containerId].dispose === 'function') {
+                window[containerId].dispose();
+            }
+
+            // 创建新的图表实例
+            try {
+                window[containerId] = echarts.init(chartDom, null, {
+                    renderer: 'canvas',
+                    useDirtyRect: false
+                });
+
+                // 确保tooltip容器有正确的z-index
+                const tooltipContainer = chartDom.querySelector('.echarts-tooltip');
+                if (tooltipContainer) {
+                    tooltipContainer.style.zIndex = '9999';
+                }
+            } catch (error) {
+                console.error(`创建图表失败: ${error.message}`);
+                return;
+            }
+
+            const option = {
+                title: {
+                    text: title,
+                    left: 'center',
+                    top: 16,
+                    textStyle: {
+                        fontSize: 18,
+                        fontWeight: '700',
+                        color: '#111827',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                        textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                    borderColor: '#e5e7eb',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                    textStyle: { color: '#374151', fontSize: 13 },
+                    confine: false,
+                    appendToBody: true,
+                    enterable: true,
+                    hideDelay: 100,
+                    formatter: function (params) {
+                        let result = `<div style="font-weight: 700; margin-bottom: 8px; color: #111827; font-size: 14px;">${params[0].axisValue}</div>`;
+
+                        // 过滤有效数据并按数值从大到小排序（包括0值）
+                        const validParams = params.filter(param => param.value != null && param.value !== Infinity && param.value !== -Infinity && !isNaN(param.value) && param.value !== '');
+                        validParams.sort((a, b) => parseFloat(b.value) - parseFloat(a.value));
+
+                        validParams.forEach(param => {
+                            const unit = showPercentage ? '%' : '';
+                            const displayValue = showPercentage ? parseFloat(param.value).toFixed(1) : formatNumber(param.value);
+                            result += `<div style="margin: 3px 0; display: flex; align-items: center; gap: 6px;">
+                                <span style="display: inline-block; width: 8px; height: 8px; background: ${param.color}; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1);"></span>
+                                <span style="margin-right: 6px; color: #4b5563; font-size: 12px;">${param.seriesName}:</span> 
+                                <span style="color: #111827; font-weight: 700; font-size: 12px;">${displayValue}${unit}</span>
+                            </div>`;
+                        });
+                        return result;
+                    }
+                },
+                legend: {
+                    data: series.map(s => s.name),
+                    top: 45,
+                    textStyle: {
+                        fontSize: 11,
+                        color: '#374151',
+                        fontWeight: '500'
+                    },
+                    itemGap: 6,
+                    itemWidth: 8,
+                    itemHeight: 4,
+                    type: 'scroll',
+                    pageButtonItemGap: 3,
+                    pageButtonGap: 3,
+                    pageButtonPosition: 'end',
+                    pageIconColor: '#6b7280',
+                    pageIconInactiveColor: '#d1d5db',
+                    pageIconSize: 8,
+                    pageTextStyle: { color: '#6b7280', fontSize: 9 },
+                    selectedMode: true,
+                    formatter: function (name) {
+                        // 截断过长的图例名称
+                        return name.length > 6 ? name.substring(0, 6) + '...' : name;
+                    }
+                },
+                grid: {
+                    left: '6%',
+                    right: '6%',
+                    bottom: '15%',
+                    top: '22%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: periods,
+                    axisLabel: {
+                        fontSize: 11,
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        margin: 8,
+                        interval: Math.floor(periods.length / 8) // 只显示部分报告期标签
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#e5e7eb',
+                            width: 0.5
+                        }
+                    },
+                    axisTick: {
+                        show: false
+                    },
+                    boundaryGap: false
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        formatter: showPercentage ? function (value) {
+                            return parseFloat(value).toFixed(2) + '%';
+                        } : function (value) {
+                            return formatNumber(value);
+                        },
+                        fontSize: 12,
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        margin: 6
+                    },
+                    axisLine: {
+                        show: false
+                    },
+                    axisTick: {
+                        show: false
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#e5e7eb',
+                            width: 1,
+                            type: 'solid'
+                        }
+                    }
+                },
+                series: series.map((s, index) => {
+                    // 强制使用预定义的丰富颜色方案
+                    const richColors = [
+                        '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+                        '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
+                        '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9', '#22c55e',
+                        '#dc2626', '#7c3aed', '#059669', '#d97706', '#be185d'
+                    ];
+                    const lineColor = richColors[index % richColors.length];
+
+                    return {
+                        name: s.name,
+                        type: 'line',
+                        data: s.data,
+                        color: lineColor,
+                        symbol: 'none', // 移除所有数据点符号
+                        lineStyle: {
+                            width: 1.8,
+                            color: lineColor,
+                            type: 'solid', // 统一使用实线
+                            shadowColor: lineColor.replace(')', ', 0.2)').replace('rgb', 'rgba'),
+                            shadowBlur: 2,
+                            shadowOffsetY: 1
+                        },
+                        itemStyle: {
+                            color: lineColor
+                        },
+                        // 移除填充区域
+                        emphasis: {
+                            itemStyle: {
+                                color: lineColor
+                            },
+                            lineStyle: {
+                                width: 2.5,
+                                color: lineColor,
+                                shadowColor: lineColor.replace(')', ', 0.3)').replace('rgb', 'rgba'),
+                                shadowBlur: 4,
+                                shadowOffsetY: 2
+                            }
+                        },
+                        connectNulls: false,
+                        smooth: false
+                    };
+                }),
+                animation: true,
+                animationDuration: 1500,
+                animationEasing: 'cubicOut',
+                animationDelay: function (idx) {
+                    return idx * 100;
+                }
+            };
+
+            try {
+                window[containerId].setOption(option, true);
+
+                // 监听tooltip显示事件，确保z-index正确
+                window[containerId].on('showTip', function () {
+                    setTimeout(() => {
+                        const tooltips = document.querySelectorAll('.echarts-tooltip');
+                        tooltips.forEach(tooltip => {
+                            tooltip.style.zIndex = '9999';
+                            tooltip.style.position = 'absolute';
+                        });
+                    }, 10);
+                });
+
+            } catch (error) {
+                console.error(`设置图表选项失败: ${error.message}`);
+            }
+        }
+
+
+
+        function showError(message) {
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            // 创建成功消息元素
+            const successElement = document.createElement('div');
+            successElement.className = 'success-message';
+            successElement.textContent = message;
+            successElement.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                box-shadow: 0 8px 25px rgba(5, 150, 105, 0.3);
+                z-index: 10000;
+                font-weight: 500;
+                animation: slideInRight 0.3s ease-out;
+            `;
+            
+            // 添加动画样式
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(successElement);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                successElement.style.animation = 'slideOutRight 0.3s ease-in';
+                successElement.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (successElement.parentNode) {
+                        successElement.parentNode.removeChild(successElement);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 全局tooltip修复函数
+        function fixTooltipZIndex() {
+            const tooltips = document.querySelectorAll('.echarts-tooltip');
+            tooltips.forEach(tooltip => {
+                tooltip.style.zIndex = '9999';
+                tooltip.style.position = 'absolute';
+                tooltip.style.pointerEvents = 'auto';
+            });
+        }
+
+        // 定期检查并修复tooltip z-index
+        setInterval(fixTooltipZIndex, 100);
+
+        // 重置加载步骤
+        function resetLoadingSteps() {
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step${i}`);
+                step.classList.remove('active');
+                const icon = step.querySelector('.loading-step-icon');
+                icon.textContent = i;
+            }
+        }
+
+        // 开始加载步骤动画
+        function startLoadingSteps() {
+            let currentStep = 1;
+
+            function activateStep(stepNumber) {
+                const step = document.getElementById(`step${stepNumber}`);
+                if (step) {
+                    step.classList.add('active');
+                    const icon = step.querySelector('.loading-step-icon');
+                    icon.textContent = '✓';
+                }
+            }
+
+            // 模拟加载步骤
+            const stepIntervals = [800, 1200, 1000, 800]; // 每个步骤的持续时间
+
+            stepIntervals.forEach((interval, index) => {
+                setTimeout(() => {
+                    activateStep(index + 1);
+                }, stepIntervals.slice(0, index).reduce((a, b) => a + b, 0));
+            });
+        }
+
+        // 翻石头专用动画
+        function startFlipStoneAnimation() {
+            const loadingText = document.querySelector('#loading .loading-text');
+            const loadingSubtext = document.querySelector('#loading .loading-subtext');
+            const loadingSteps = document.querySelector('.loading-steps');
+
+            // 隐藏原有的步骤
+            loadingSteps.style.display = 'none';
+
+            // 动画阶段1：开始翻石头
+            loadingText.textContent = '🔍 正在翻石头找股票';
+            loadingSubtext.textContent = '系统正在随机选择一只股票进行分析';
+
+            // 动画阶段2：找到股票
+            setTimeout(() => {
+                loadingText.textContent = '💎 找到了一只！';
+                loadingSubtext.textContent = '正在准备分析报告，请稍候...';
+                // 添加找到股票的视觉反馈
+                loadingText.style.transform = 'scale(1.1)';
+                loadingText.style.transition = 'transform 0.3s ease';
+                setTimeout(() => {
+                    loadingText.style.transform = 'scale(1)';
+                    // 直接切换到正常分析动画
+                    setTimeout(() => {
+                        // 显示原有的步骤（正常分析动画）
+                        loadingSteps.style.display = 'flex';
+                        // 重置步骤状态
+                        resetLoadingSteps();
+                        // 使用正常分析动画的文本
+                        loadingText.textContent = '正在分析A股数据';
+                        loadingSubtext.textContent = '系统正在获取财务数据并生成分析报告';
+                    }, 500);
+                }, 300);
+            }, 1500);
+
+
+        }
+
+        // 完成加载
+        function completeLoading() {
+            const loadingSteps = document.querySelector('.loading-steps');
+
+            // 如果步骤被隐藏了（翻石头模式），重新显示
+            if (loadingSteps.style.display === 'none') {
+                loadingSteps.style.display = 'flex';
+            }
+
+            // 激活所有步骤
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step${i}`);
+                step.classList.add('active');
+                const icon = step.querySelector('.loading-step-icon');
+                icon.textContent = '✓';
+            }
+
+            // 清除翻石头动画效果
+            const loadingText = document.querySelector('#loading .loading-text');
+            loadingText.style.animation = '';
+
+            // 短暂延迟后隐藏加载界面
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                document.getElementById('loading').style.display = 'none';
+            }, 500);
+        }
+
+
+
+        // 全局变量存储股票列表
+        let aShareStockList = [];
+        let hkStockList = [];
+        let filteredStocks = [];
+        let selectedIndex = -1;
+
+        // 页面加载时获取股票列表
+        window.addEventListener('load', function () {
+            loadStockLists();
+        });
+
+        // 加载股票列表
+        function loadStockLists() {
+            // 并行加载A股和港股列表
+            Promise.all([
+                fetch('http://localhost:8888/api/zxm/stock-list'),
+                fetch('http://localhost:8888/api/zxm/hk-stock-list')
+            ])
+                .then(responses => {
+                    return Promise.all(responses.map(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    }));
+                })
+                .then(([aShareData, hkData]) => {
+                    if (aShareData && aShareData.length > 0) {
+                        aShareStockList = aShareData;
+                        console.log('A股列表加载成功，共', aShareStockList.length, '只股票');
+                    }
+                    if (hkData && hkData.length > 0) {
+                        hkStockList = hkData;
+                        console.log('港股列表加载成功，共', hkStockList.length, '只股票');
+                    }
+                })
+                .catch(error => {
+                    console.error('加载股票列表失败:', error);
+                });
+        }
+
+        // 搜索股票
+        function searchStocks(query) {
+            if (!query || query.length < 1) {
+                hideSuggestions();
+                return;
+            }
+
+            const results = [];
+            const lowerQuery = query.toLowerCase();
+
+            // 搜索A股股票（代码或名称匹配）
+            aShareStockList.forEach(stock => {
+                if (stock.code && stock.name) {
+                    const codeMatch = stock.code.includes(query);
+                    const nameMatch = stock.name.toLowerCase().includes(lowerQuery);
+
+                    if (codeMatch || nameMatch) {
+                        results.push({
+                            ...stock,
+                            type: 'ashare',
+                            matchType: codeMatch ? 'code' : 'name'
+                        });
+                    }
+                }
+            });
+
+            // 搜索港股股票（代码或名称匹配）
+            hkStockList.forEach(stock => {
+                if (stock.code && stock.name) {
+                    const codeMatch = stock.code.includes(query);
+                    const nameMatch = stock.name.toLowerCase().includes(lowerQuery);
+
+                    if (codeMatch || nameMatch) {
+                        results.push({
+                            ...stock,
+                            type: 'hk',
+                            matchType: codeMatch ? 'code' : 'name'
+                        });
+                    }
+                }
+            });
+
+            // 限制显示数量
+            filteredStocks = results.slice(0, 10);
+            showSuggestions();
+        }
+
+        // 显示建议
+        function showSuggestions() {
+            const suggestionsDiv = document.getElementById('stockSuggestions');
+            if (filteredStocks.length === 0) {
+                hideSuggestions();
+                return;
+            }
+
+            suggestionsDiv.innerHTML = '';
+            filteredStocks.forEach((stock, index) => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                const typeClass = stock.type === 'hk' ? 'hk' : 'ashare';
+                const typeText = stock.type === 'hk' ? '港股' : 'A股';
+
+                item.innerHTML = `
+                    <div>
+                        <div class="suggestion-code">${stock.code}</div>
+                        <div class="suggestion-name">${stock.name}</div>
+                    </div>
+                    <span class="suggestion-type ${typeClass}">${typeText}</span>
+                `;
+
+                item.addEventListener('click', () => selectStock(stock));
+                item.addEventListener('mouseenter', () => {
+                    selectedIndex = index;
+                    updateSelection();
+                });
+
+                suggestionsDiv.appendChild(item);
+            });
+
+            suggestionsDiv.style.display = 'block';
+            selectedIndex = -1;
+        }
+
+        // 隐藏建议
+        function hideSuggestions() {
+            document.getElementById('stockSuggestions').style.display = 'none';
+            selectedIndex = -1;
+        }
+
+        // 更新选择状态
+        function updateSelection() {
+            const items = document.querySelectorAll('.suggestion-item');
+            items.forEach((item, index) => {
+                if (index === selectedIndex) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        // 选择股票
+        function selectStock(stock) {
+            document.getElementById('stockSymbol').value = stock.code;
+            hideSuggestions();
+        }
+
+        // 输入框事件处理
+        const stockInput = document.getElementById('stockSymbol');
+
+        stockInput.addEventListener('input', function (e) {
+            const query = e.target.value.trim();
+            searchStocks(query);
+        });
+
+        stockInput.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (selectedIndex < filteredStocks.length - 1) {
+                    selectedIndex++;
+                    updateSelection();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (selectedIndex > 0) {
+                    selectedIndex--;
+                    updateSelection();
+                } else if (selectedIndex === 0) {
+                    selectedIndex = -1;
+                    updateSelection();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedIndex >= 0 && filteredStocks[selectedIndex]) {
+                    selectStock(filteredStocks[selectedIndex]);
+                } else {
+                    analyzeStock();
+                }
+            } else if (e.key === 'Escape') {
+                hideSuggestions();
+            }
+        });
+
+        // 点击其他地方隐藏建议
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.input-wrapper')) {
+                hideSuggestions();
+            }
+        });
+
+        // 回车键触发分析（保留原有功能）
+        stockInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && selectedIndex === -1) {
+                analyzeStock();
+            }
+        });
+
+        function displayValuationChart(valuationData) {
+            if (!valuationData || valuationData.length === 0) {
+                console.warn('估值数据为空');
+                return;
+            }
+
+            // 按日期排序
+            const sortedData = valuationData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            const dates = sortedData.map(item => {
+                // 将ISO日期格式转换为更友好的格式
+                const date = new Date(item.date);
+                return date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            });
+
+            const valueData = sortedData.map(item => {
+                const value = parseFloat(item.value);
+                return isNaN(value) ? null : value;
+            });
+
+            const series = [
+                { name: '估值指标', data: valueData, color: '#e74c3c' }
+            ];
+
+            // 获取股票代码，如果没有则使用默认值
+            const symbol = valuationData[0] && valuationData[0].symbol ? valuationData[0].symbol : '股票';
+            createChart('valuationChart', `${symbol} 历史市盈率(TTM)趋势`, dates, series, false);
+        }
+
+        function displayTurnoverDistributionChart(turnoverDistributionData) {
+            if (!turnoverDistributionData || !turnoverDistributionData.success) {
+                console.warn('换手率分布数据为空');
+                return;
+            }
+
+            const intervalCounts = turnoverDistributionData.intervalCounts;
+            const intervalLabels = turnoverDistributionData.intervalLabels;
+            const latestIntervalIndex = turnoverDistributionData.latestIntervalIndex;
+            const latestTurnover = turnoverDistributionData.latestTurnover;
+            const latestDate = turnoverDistributionData.latestDate;
+            const symbol = turnoverDistributionData.symbol;
+
+            // 准备柱状图数据
+            const data = [];
+            for (let i = 0; i < intervalCounts.length; i++) {
+                const item = {
+                    value: intervalCounts[i],
+                    itemStyle: {
+                        color: i === latestIntervalIndex ? '#e74c3c' : '#3498db' // 最新区间标记为红色
+                    }
+                };
+                data.push(item);
+            }
+
+            // 创建柱状图
+            const chart = echarts.init(document.getElementById('turnoverDistributionChart'));
+            window.turnoverDistributionChart = chart;
+
+            const option = {
+                title: {
+                    text: `${symbol} 换手率分布分析`,
+                    left: 'center',
+                    top: 16,
+                    textStyle: {
+                        fontSize: 18,
+                        fontWeight: '600',
+                        color: '#1f2937',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                    borderColor: '#e5e7eb',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                    textStyle: { color: '#374151', fontSize: 13 },
+                    confine: false,
+                    appendToBody: true,
+                    enterable: true,
+                    hideDelay: 100,
+                    axisPointer: {
+                        type: 'shadow',
+                        shadowStyle: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    formatter: function (params) {
+                        const dataIndex = params[0].dataIndex;
+                        const count = params[0].value;
+                        const label = intervalLabels[dataIndex];
+                        let tooltipText = `<div style="padding: 8px;">
+                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 8px; font-size: 14px;">区间: ${label}</div>
+                            <div style="color: #6b7280; font-size: 13px;">天数: <span style="font-weight: 600; color: #1f2937;">${count}</span></div>`;
+
+                        if (dataIndex === latestIntervalIndex) {
+                            tooltipText += `<div style="color: #ef4444; font-size: 13px; margin-top: 4px;">
+                                最新换手率: <span style="font-weight: 600;">${latestTurnover}%</span><br/>
+                                <span style="font-size: 12px;">(${latestDate})</span>
+                            </div>`;
+                        }
+
+                        tooltipText += '</div>';
+                        return tooltipText;
+                    }
+                },
+                grid: {
+                    left: '6%',
+                    right: '6%',
+                    bottom: '18%',
+                    top: '22%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: intervalLabels,
+                    axisLabel: {
+                        fontSize: 11,
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        rotate: 45,
+                        interval: 99, // 每100个显示一个标签，避免过于密集
+                        margin: 12
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#e5e7eb',
+                            width: 1
+                        }
+                    },
+                    axisTick: {
+                        show: false
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '天数',
+                    nameTextStyle: {
+                        fontSize: 12,
+                        color: '#6b7280',
+                        fontWeight: '500'
+                    },
+                    axisLabel: {
+                        fontSize: 12,
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        margin: 8
+                    },
+                    axisLine: {
+                        show: false
+                    },
+                    axisTick: {
+                        show: false
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#f3f4f6',
+                            width: 1,
+                            type: 'dashed'
+                        }
+                    }
+                },
+                series: [{
+                    name: '天数',
+                    type: 'bar',
+                    data: data,
+                    barWidth: '65%',
+                    itemStyle: {
+                        borderRadius: [4, 4, 0, 0],
+                        shadowColor: 'rgba(0, 0, 0, 0.1)',
+                        shadowBlur: 4,
+                        shadowOffsetY: 2
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowColor: 'rgba(0, 0, 0, 0.2)',
+                            shadowBlur: 8,
+                            shadowOffsetY: 4
+                        }
+                    }
+                }],
+                legend: {
+                    data: ['天数'],
+                    bottom: 0,
+                    textStyle: {
+                        fontSize: 12,
+                        color: '#6b7280',
+                        fontWeight: '500'
+                    }
+                },
+                animation: true,
+                animationDuration: 1200,
+                animationEasing: 'cubicOut',
+                animationDelay: function (idx) {
+                    return idx * 50;
+                }
+            };
+
+            try {
+                chart.setOption(option, true);
+
+                // 监听tooltip显示事件，确保z-index正确
+                chart.on('showTip', function () {
+                    setTimeout(() => {
+                        const tooltips = document.querySelectorAll('.echarts-tooltip');
+                        tooltips.forEach(tooltip => {
+                            tooltip.style.zIndex = '9999';
+                            tooltip.style.position = 'absolute';
+                        });
+                    }, 10);
+                });
+
+            } catch (error) {
+                console.error('设置换手率分布图表选项失败:', error.message);
+            }
+        }
+
+        // 全局变量存储港股财务分析数据
+        let globalHkAnalysisData = null;
+        
+        // 全局变量存储A股财务分析数据
+        let globalAShareAnalysisData = null;
+
+        function displayHkAllCharts(debtData, assetData, profitDataData, profitRatioData, financialRatioData, cashFlowData) {
+            // 保存数据到全局变量
+            globalHkAnalysisData = {
+                debtData, assetData, profitDataData, profitRatioData, financialRatioData, cashFlowData
+            };
+            // 检查数据 - 港股数据按报告期组织，字段名为 yearlyRatios
+            const debtRatios = debtData && debtData.yearlyRatios ? debtData.yearlyRatios : null;
+            const assetRatios = assetData && assetData.yearlyRatios ? assetData.yearlyRatios : null;
+            const profitDataRatios = profitDataData && profitDataData.yearlyRatios ? profitDataData.yearlyRatios : null;
+            const profitRatioRatios = profitRatioData && profitRatioData.yearlyRatios ? profitRatioData.yearlyRatios : null;
+            const financialRatioRatios = financialRatioData && financialRatioData.yearlyRatios ? financialRatioData.yearlyRatios : null;
+            const cashFlowRatios = cashFlowData && cashFlowData.yearlyRatios ? cashFlowData.yearlyRatios : null;
+
+            // 只要有任一数据存在就继续显示
+            const hasAnyData = (debtRatios && Object.keys(debtRatios).length > 0) ||
+                (assetRatios && Object.keys(assetRatios).length > 0) ||
+                (profitDataRatios && Object.keys(profitDataRatios).length > 0) ||
+                (profitRatioRatios && Object.keys(profitRatioRatios).length > 0) ||
+                (financialRatioRatios && Object.keys(financialRatioRatios).length > 0) ||
+                (cashFlowRatios && Object.keys(cashFlowRatios).length > 0);
+
+            if (!hasAnyData) {
+                showError('未找到该港股的财务数据');
+                document.getElementById('welcomeSection').style.display = 'block';
+                return;
+            }
+
+            // 隐藏欢迎区域
+            document.getElementById('welcomeSection').style.display = 'none';
+
+            // 创建图表容器 - 两列布局
+            const chartContainer = document.getElementById('chartContainer');
+            let chartHtml = '';
+
+            // 第一行：负债结构 + 资产结构
+            if ((debtRatios && Object.keys(debtRatios).length > 0) ||
+                (assetRatios && Object.keys(assetRatios).length > 0)) {
+                chartHtml += `<div class="chart-row">`;
+
+                if (debtRatios && Object.keys(debtRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="hkDebtChart" class="chart"></div>
+                    </div>`;
+                }
+
+                if (assetRatios && Object.keys(assetRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="hkAssetChart" class="chart"></div>
+                    </div>`;
+                }
+
+                chartHtml += `</div>`;
+            }
+
+            // 第二行：利润表数据 + 财务比率
+            if ((profitDataRatios && Object.keys(profitDataRatios).length > 0) ||
+                (profitRatioRatios && Object.keys(profitRatioRatios).length > 0)) {
+                chartHtml += `<div class="chart-row">`;
+
+                if (profitDataRatios && Object.keys(profitDataRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="hkProfitDataChart" class="chart"></div>
+                    </div>`;
+                }
+
+                if (profitRatioRatios && Object.keys(profitRatioRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="hkProfitRatioChart" class="chart"></div>
+                    </div>`;
+                }
+
+                chartHtml += `</div>`;
+            }
+
+            // 第三行：财务比率分析 + 现金流量表数据
+            if ((financialRatioRatios && Object.keys(financialRatioRatios).length > 0) ||
+                (cashFlowRatios && Object.keys(cashFlowRatios).length > 0)) {
+                chartHtml += `<div class="chart-row">`;
+
+                if (financialRatioRatios && Object.keys(financialRatioRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="hkFinancialRatioChart" class="chart"></div>
+                    </div>`;
+                }
+
+                if (cashFlowRatios && Object.keys(cashFlowRatios).length > 0) {
+                    chartHtml += `<div class="chart-wrapper">
+                        <div id="hkCashFlowChart" class="chart"></div>
+                    </div>`;
+                }
+
+                chartHtml += `</div>`;
+            }
+
+            // 第四行：港股换手率分布图表
+            chartHtml += `<div class="chart-row">`;
+            chartHtml += `<div class="chart-wrapper">
+                <div id="hkTurnoverDistributionChart" class="chart"></div>
+            </div>`;
+            chartHtml += `</div>`;
+
+            chartContainer.innerHTML = chartHtml;
+            chartContainer.style.display = 'block';
+
+            // 确保图表正确渲染
+            setTimeout(() => {
+                if (window.hkDebtChart && typeof window.hkDebtChart.resize === 'function') {
+                    window.hkDebtChart.resize();
+                }
+                if (window.hkAssetChart && typeof window.hkAssetChart.resize === 'function') {
+                    window.hkAssetChart.resize();
+                }
+                if (window.hkProfitDataChart && typeof window.hkProfitDataChart.resize === 'function') {
+                    window.hkProfitDataChart.resize();
+                }
+                if (window.hkProfitRatioChart && typeof window.hkProfitRatioChart.resize === 'function') {
+                    window.hkProfitRatioChart.resize();
+                }
+                if (window.hkFinancialRatioChart && typeof window.hkFinancialRatioChart.resize === 'function') {
+                    window.hkFinancialRatioChart.resize();
+                }
+                if (window.hkCashFlowChart && typeof window.hkCashFlowChart.resize === 'function') {
+                    window.hkCashFlowChart.resize();
+                }
+            }, 100);
+
+            // 渲染港股图表
+            // 初始显示时，港股总是按报告期显示，不依赖switch状态
+            const useYearlyData = false;
+
+            if (debtRatios && Object.keys(debtRatios).length > 0) {
+                try {
+                    displayHkDebtChart(debtData, useYearlyData);
+                } catch (e) {
+                    console.warn('港股负债图表显示失败:', e);
+                }
+            }
+
+            if (assetRatios && Object.keys(assetRatios).length > 0) {
+                try {
+                    displayHkAssetChart(assetData, useYearlyData);
+                } catch (e) {
+                    console.warn('港股资产图表显示失败:', e);
+                }
+            }
+
+            if (profitDataRatios && Object.keys(profitDataRatios).length > 0) {
+                try {
+                    displayHkProfitDataChart(profitDataData, useYearlyData);
+                } catch (e) {
+                    console.warn('港股利润表数据图表显示失败:', e);
+                }
+            }
+
+            if (profitRatioRatios && Object.keys(profitRatioRatios).length > 0) {
+                try {
+                    displayHkProfitRatioChart(profitRatioData, useYearlyData);
+                } catch (e) {
+                    console.warn('港股利润分析图表显示失败:', e);
+                }
+            }
+
+            if (financialRatioRatios && Object.keys(financialRatioRatios).length > 0) {
+                try {
+                    displayHkFinancialRatioChart(financialRatioData, useYearlyData);
+                } catch (e) {
+                    console.warn('港股财务比率分析图表显示失败:', e);
+                }
+            }
+
+            if (cashFlowRatios && Object.keys(cashFlowRatios).length > 0) {
+                try {
+                    displayHkCashFlowChart(cashFlowData, useYearlyData);
+                } catch (e) {
+                    console.warn('港股现金流量表图表显示失败:', e);
+                }
+            }
+        }
+
+        // 通用数据处理函数
+        function processChartData(yearlyRatios, chartTitle, isPercentage = true, allowZero = false, useYearlyData = false) {
+            if (!yearlyRatios) {
+                console.warn(`${chartTitle}数据为空`);
+                return null;
+            }
+
+            let periods, formattedPeriods;
+            let yearlyData = {}; // 将yearlyData声明移到函数顶部
+            
+            if (useYearlyData) {
+                // 按年度模式：提取年度数据
+                Object.keys(yearlyRatios).forEach(period => {
+                    const year = period.split('-')[0]; // 提取年份
+                    if (!yearlyData[year]) {
+                        yearlyData[year] = {};
+                    }
+                    // 合并同一年份的数据（取最新报告期的数据）
+                    Object.keys(yearlyRatios[period]).forEach(indicator => {
+                        // 如果该指标还没有值，或者当前报告期比已有的更新，则更新
+                        if (!yearlyData[year][indicator] || period > Object.keys(yearlyRatios).filter(p => p.startsWith(year + '-')).sort().pop()) {
+                            yearlyData[year][indicator] = yearlyRatios[period][indicator];
+                        }
+                    });
+                });
+                
+                periods = Object.keys(yearlyData).sort();
+                formattedPeriods = periods;
+            } else {
+                // 按报告期模式：保持原有逻辑
+                periods = Object.keys(yearlyRatios).sort();
+                
+                // 格式化报告期显示，去掉时间部分，只保留日期
+                formattedPeriods = periods.map(period => {
+                    if (period && period.includes(' ')) {
+                        return period.split(' ')[0]; // 只取日期部分，去掉时间
+                    }
+                    return period;
+                });
+            }
+            
+            const series = [];
+
+            // 获取所有指标
+            const indicators = new Set();
+            if (useYearlyData) {
+                // 年度模式：从年度数据中获取指标
+                periods.forEach(period => {
+                    if (yearlyData[period]) {
+                        Object.keys(yearlyData[period]).forEach(indicator => {
+                            indicators.add(indicator);
+                        });
+                    }
+                });
+            } else {
+                // 报告期模式：从原始数据中获取指标
+                periods.forEach(period => {
+                    if (yearlyRatios[period]) {
+                        Object.keys(yearlyRatios[period]).forEach(indicator => {
+                            indicators.add(indicator);
+                        });
+                    }
+                });
+            }
+
+            // 为每个指标创建数据系列
+            const colors = [
+                '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+                '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
+                '#14b8a6', '#f43f5e', '#a855f7', '#0ea5e9', '#22c55e',
+                '#f97316', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'
+            ];
+            // 随机打乱颜色数组，确保颜色分配更加多样化
+            const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+            let colorIndex = 0;
+
+            indicators.forEach(indicator => {
+                const data = periods.map(period => {
+                    let periodData;
+                    if (useYearlyData) {
+                        // 年度模式：直接使用年度数据
+                        periodData = yearlyData[period];
+                    } else {
+                        periodData = yearlyRatios[period];
+                    }
+                    
+                    if (!periodData || !periodData[indicator]) {
+                        return null;
+                    }
+                    const value = periodData[indicator];
+
+                    // 处理null、undefined、空字符串和无效值
+                    if (value === null || value === undefined || value === '' || isNaN(value)) {
+                        return null;
+                    }
+
+                    const numValue = parseFloat(value);
+                    if (isNaN(numValue)) {
+                        return null;
+                    }
+
+                    // 如果不允许0值且值为0，返回null
+                    if (!allowZero && numValue === 0) {
+                        return null;
+                    }
+
+                    // 如果是百分比数据，转换为百分比
+                    return isPercentage ? numValue * 100 : numValue;
+                });
+
+                // 检查是否有有效数据
+                const validData = data.filter(val => val !== null);
+                if (validData.length > 0) {
+                    series.push({
+                        name: indicator,
+                        data: data,
+                        color: shuffledColors[colorIndex % shuffledColors.length]
+                    });
+                    colorIndex++;
+                }
+            });
+
+            if (series.length === 0) {
+                console.warn(`${chartTitle}图表没有有效数据`);
+                return null;
+            }
+
+            return { periods: formattedPeriods, series };
+        }
+
+        function displayHkDebtChart(debtData, useYearlyData = false) {
+            if (!debtData || !debtData.yearlyRatios) {
+                console.warn('港股负债数据为空');
+                return;
+            }
+
+            const result = processChartData(debtData.yearlyRatios, '港股负债结构分析', true, true, useYearlyData);
+            if (result) {
+                const title = useYearlyData ? '港股负债结构分析（按年度）' : '港股负债结构分析';
+                createChart('hkDebtChart', title, result.periods, result.series, true);
+            }
+        }
+
+        function displayHkAssetChart(assetData, useYearlyData = false) {
+            if (!assetData || !assetData.yearlyRatios) {
+                console.warn('港股资产数据为空');
+                return;
+            }
+
+            const result = processChartData(assetData.yearlyRatios, '港股资产结构分析', true, true, useYearlyData);
+            if (result) {
+                const title = useYearlyData ? '港股资产结构分析（按年度）' : '港股资产结构分析';
+                createChart('hkAssetChart', title, result.periods, result.series, true);
+            }
+        }
+
+        function displayHkProfitDataChart(profitDataData, useYearlyData = false) {
+            if (!profitDataData || !profitDataData.yearlyRatios) {
+                console.warn('港股利润表数据为空');
+                return;
+            }
+
+            const result = processChartData(profitDataData.yearlyRatios, '港股利润表数据分析', false, true, useYearlyData);
+            if (result) {
+                const title = useYearlyData ? '港股利润表数据分析（按年度）' : '港股利润表数据分析';
+                createChart('hkProfitDataChart', title, result.periods, result.series, false);
+            }
+        }
+
+        function displayHkProfitRatioChart(profitRatioData, useYearlyData = false) {
+            if (!profitRatioData || !profitRatioData.yearlyRatios) {
+                console.warn('港股财务比率数据为空');
+                return;
+            }
+
+            const result = processChartData(profitRatioData.yearlyRatios, '港股利润分析', true, false, useYearlyData);
+            if (result) {
+                const title = useYearlyData ? '港股利润分析（按年度）' : '港股利润分析';
+                createChart('hkProfitRatioChart', title, result.periods, result.series, true);
+            }
+        }
+
+                function displayHkFinancialRatioChart(financialRatioData, useYearlyData = false) {
+            if (!financialRatioData || !financialRatioData.yearlyRatios) {
+                console.warn('港股财务比率分析数据为空');
+                return;
+            }
+
+            const result = processChartData(financialRatioData.yearlyRatios, '港股财务比率分析', true, false, useYearlyData);
+            if (result) {
+                const title = useYearlyData ? '港股财务比率分析（按年度）' : '港股财务比率分析';
+                createChart('hkFinancialRatioChart', title, result.periods, result.series, true);
+            }
+        }
+
+        function displayHkCashFlowChart(cashFlowData, useYearlyData = false) {
+            if (!cashFlowData || !cashFlowData.yearlyRatios) {
+                console.warn('港股现金流量表数据为空');
+                return;
+            }
+
+            const result = processChartData(cashFlowData.yearlyRatios, '港股现金流量表分析', false, true, useYearlyData);
+            if (result) {
+                const title = useYearlyData ? '港股现金流量表分析（按年度）' : '港股现金流量表分析';
+                createChart('hkCashFlowChart', title, result.periods, result.series, false);
+            }
+        }
+
+        // 重新绘制所有港股图表
+        function redrawHkCharts(useYearlyData = false) {
+            console.log('redrawHkCharts被调用，参数useYearlyData:', useYearlyData);
+            
+            if (!globalHkAnalysisData) {
+                console.warn('没有可用的港股分析数据');
+                return;
+            }
+            
+            console.log('开始重新绘制图表，数据存在');
+            const { debtData, assetData, profitDataData, profitRatioData, financialRatioData, cashFlowData } = globalHkAnalysisData;
+            
+            // 重新绘制所有图表
+            if (debtData && debtData.yearlyRatios) {
+                console.log('重新绘制负债图表');
+                displayHkDebtChart(debtData, useYearlyData);
+            }
+            if (assetData && assetData.yearlyRatios) {
+                console.log('重新绘制资产图表');
+                displayHkAssetChart(assetData, useYearlyData);
+            }
+            if (profitDataData && profitDataData.yearlyRatios) {
+                console.log('重新绘制利润表数据图表');
+                displayHkProfitDataChart(profitDataData, useYearlyData);
+            }
+            if (profitRatioData && profitRatioData.yearlyRatios) {
+                console.log('重新绘制利润分析图表');
+                displayHkProfitRatioChart(profitRatioData, useYearlyData);
+            }
+            if (financialRatioData && financialRatioData.yearlyRatios) {
+                console.log('重新绘制财务比率分析图表');
+                displayHkFinancialRatioChart(financialRatioData, useYearlyData);
+            }
+            if (cashFlowData && cashFlowData.yearlyRatios) {
+                console.log('重新绘制现金流量表图表');
+                displayHkCashFlowChart(cashFlowData, useYearlyData);
+            }
+            
+            console.log('所有图表重新绘制完成');
+        }
+
+        // 重新绘制所有A股图表
+        function redrawAShareCharts(useYearlyData = false) {
+            console.log('redrawAShareCharts被调用，参数useYearlyData:', useYearlyData);
+            
+            if (!globalAShareAnalysisData) {
+                console.warn('没有可用的A股分析数据');
+                return;
+            }
+            
+            console.log('开始重新绘制A股图表，数据存在');
+            const { debtData, assetData, profitDataData, profitRatioData, bloodDataData, bloodRatioData, financialRatioData, valuationData, turnoverDistributionData, shareholderData } = globalAShareAnalysisData;
+            
+            // 重新绘制所有图表
+            if (debtData && debtData.yearlyRatios) {
+                console.log('重新绘制A股负债图表');
+                displayDebtChart(debtData, useYearlyData);
+            }
+            if (assetData && assetData.yearlyRatios) {
+                console.log('重新绘制A股资产图表');
+                displayAssetChart(assetData, useYearlyData);
+            }
+            if (profitDataData && profitDataData.yearlyRatios) {
+                console.log('重新绘制A股利润表数据图表');
+                displayProfitDataChart(profitDataData, useYearlyData);
+            }
+            if (profitRatioData && profitRatioData.yearlyRatios) {
+                console.log('重新绘制A股利润分析图表');
+                displayProfitRatioChart(profitRatioData, useYearlyData);
+            }
+            if (bloodDataData && bloodDataData.yearlyDatas) {
+                console.log('重新绘制A股造血能力数据图表');
+                displayBloodDataChart(bloodDataData, useYearlyData);
+            }
+            if (bloodRatioData && bloodRatioData.yearlyRatios) {
+                console.log('重新绘制A股造血能力比率图表');
+                displayBloodRatioChart(bloodRatioData, useYearlyData);
+            }
+            if (financialRatioData && financialRatioData.yearlyRatios) {
+                console.log('重新绘制A股财务比率分析图表');
+                displayFinancialRatioChart(financialRatioData, useYearlyData);
+            }
+            
+            console.log('所有A股图表重新绘制完成');
+        }
+
+        // 展示港股所有基本信息字段
+        function displayHkBasicInfo(info) {
+            const section = document.getElementById('stockInfoSection');
+            let html = `<div class="stock-info-header"><h2>${info.comcnname || ''}（${info.comenname || ''}）</h2></div>`;
+            html += '<div class="stock-info-grid">';
+
+            // 基本信息组 - 整合公司名称和行业
+            if (info.comcnname || info.comenname || info.industry) {
+                html += `<div class="stock-info-item basic-info full-width">`;
+                if (info.comcnname) html += `<div class="info-label">公司名称</div><div class="info-value">${info.comcnname}${info.comenname ? ` / ${info.comenname}` : ''}</div>`;
+                if (info.industry) html += `<div class="info-label">所属行业</div><div class="info-value">${info.industry}</div>`;
+                html += '</div>';
+            }
+            
+            // 公司注册号
+            if (info.comunic) html += `<div class="stock-info-item basic-info"><div class="info-label">公司注册号</div><div class="info-value">${info.comunic}</div></div>`;
+            
+            // 管理层信息组 - 整合法定代表人和董事长
+            if (info.legalRepresentative || info.chairman) {
+                html += `<div class="stock-info-item shares-info">`;
+                if (info.legalRepresentative) html += `<div class="info-label">法定代表人</div><div class="info-value">${info.legalRepresentative}</div>`;
+                if (info.chairman && info.chairman !== info.legalRepresentative) html += `<div class="info-label">董事长</div><div class="info-value">${info.chairman}</div>`;
+                html += '</div>';
+            }
+            
+            // 成立日期和注册资本
+            if (info.incdate || info.registeredCapital) {
+                html += `<div class="stock-info-item shares-info">`;
+                if (info.incdate) html += `<div class="info-label">成立日期</div><div class="info-value">${formatDateFromTimestamp(info.incdate)}</div>`;
+                if (info.registeredCapital) html += `<div class="info-label">注册资本</div><div class="info-value">${info.registeredCapital}</div>`;
+                html += '</div>';
+            }
+            
+            // 地址信息组 - 整合注册地址和办公地址
+            if (info.rgiofc || info.hofclctmbu) {
+                html += `<div class="stock-info-item market-info full-width">`;
+                if (info.rgiofc) html += `<div class="info-label">注册地址</div><div class="info-value">${info.rgiofc}</div>`;
+                if (info.hofclctmbu) html += `<div class="info-label">办公地址</div><div class="info-value">${info.hofclctmbu}</div>`;
+                html += '</div>';
+            }
+            
+            // 联系信息组 - 整合联系方式
+            if (info.website || info.email || info.phone) {
+                html += `<div class="stock-info-item other-info full-width">`;
+                if (info.website) html += `<div class="info-label">公司网址</div><div class="info-value"><a href="http://${info.website}" target="_blank" style="color:#3b82f6;">${info.website}</a></div>`;
+                if (info.email) html += `<div class="info-label">公司邮箱</div><div class="info-value"><a href="mailto:${info.email}" style="color:#3b82f6;">${info.email}</a></div>`;
+                if (info.phone) html += `<div class="info-label">联系电话</div><div class="info-value">${info.phone}</div>`;
+                html += '</div>';
+            }
+            
+            // 业务信息组 - 整合主营业务和经营范围
+            if (info.mbu || info.businessScope) {
+                html += `<div class="stock-info-item other-info full-width">`;
+                if (info.mbu) html += `<div class="info-label">主营业务</div><div class="info-value">${info.mbu}</div>`;
+                if (info.businessScope) html += `<div class="info-label">经营范围</div><div class="info-value">${info.businessScope}</div>`;
+                html += '</div>';
+            }
+
+            html += '</div>';
+            
+            // 公司简介单独一行，内容较长
+            if (info.comintr) {
+                html += '<div class="company-intro-section">';
+                html += '<div class="company-intro-header"><h3>公司简介</h3></div>';
+                html += '<div class="company-intro-content">' + info.comintr + '</div>';
+                html += '</div>';
+            }
+            
+            section.innerHTML = html;
+            section.style.display = 'block';
+        }
+
+        function formatDateFromTimestamp(ts) {
+            if (!ts) return '-';
+            try {
+                const d = new Date(Number(ts));
+                if (isNaN(d.getTime())) return '-';
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            } catch { return '-'; }
+        }
+
+        function displayShareholderChart(shareholderData) {
+            if (!shareholderData || !shareholderData.shareholderData || shareholderData.shareholderData.length === 0) {
+                console.warn('股东户数数据为空');
+                return;
+            }
+
+            const data = shareholderData.shareholderData;
+
+            // 按统计日期排序
+            data.sort((a, b) => {
+                const dateA = new Date(a.statisticalDate);
+                const dateB = new Date(b.statisticalDate);
+                return dateA - dateB;
+            });
+
+            // 提取日期和股东户数数据，使用与其他图表一致的时间格式
+            const dates = data.map(item => {
+                const date = new Date(item.statisticalDate);
+                return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+            });
+
+            const shareholderCounts = data.map(item => {
+                const count = parseFloat(item.shareholderCount);
+                return isNaN(count) ? null : count;
+            });
+
+            const series = [
+                {
+                    name: '股东户数',
+                    data: shareholderCounts,
+                    color: '#1e40af',
+                    type: 'bar',
+                    barWidth: '60%',
+                    itemStyle: {
+                        borderRadius: [4, 4, 0, 0]
+                    }
+                }
+            ];
+
+            const chartDom = document.getElementById('shareholderChart');
+            if (!chartDom) {
+                console.error('找不到股东户数图表容器');
+                return;
+            }
+
+            const chart = echarts.init(chartDom);
+            window.shareholderChart = chart;
+
+            const option = {
+                title: {
+                    text: `${data[0].symbol} 股东户数趋势`,
+                    left: 'center',
+                    textStyle: {
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        color: '#1a202c'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        const data = params[0];
+                        if (data.value === null || data.value === undefined) {
+                            return `${data.axisValue}<br/>${data.seriesName}: 暂无数据`;
+                        }
+                        return `${data.axisValue}<br/>${data.seriesName}: ${data.value.toLocaleString()} 户`;
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#e2e8f0',
+                    borderWidth: 1,
+                    textStyle: {
+                        color: '#1a202c'
+                    }
+                },
+                grid: {
+                    left: '10%',
+                    right: '10%',
+                    bottom: '15%',
+                    top: '20%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    axisLabel: {
+                        rotate: 45,
+                        fontSize: 12,
+                        color: '#4a5568'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#e2e8f0'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '股东户数',
+                    nameTextStyle: {
+                        color: '#4a5568',
+                        fontSize: 12
+                    },
+                    axisLabel: {
+                        formatter: function (value) {
+                            if (value >= 10000) {
+                                return (value / 10000).toFixed(1) + '万';
+                            }
+                            return value.toLocaleString();
+                        },
+                        fontSize: 12,
+                        color: '#4a5568'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#e2e8f0'
+                        }
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#f7fafc',
+                            type: 'dashed'
+                        }
+                    }
+                },
+                series: series
+            };
+
+            try {
+                chart.setOption(option);
+            } catch (error) {
+                console.error('设置股东户数图表选项失败:', error.message);
+            }
+        }
+
+        /**
+         * 显示港股换手率分布图表
+         */
+        function displayHkTurnoverDistributionChart(turnoverDistributionData) {
+            if (!turnoverDistributionData || !turnoverDistributionData.success) {
+                console.warn('港股换手率分布数据为空');
+                return;
+            }
+
+            const intervalCounts = turnoverDistributionData.intervalCounts;
+            const intervalLabels = turnoverDistributionData.intervalLabels;
+            const latestIntervalIndex = turnoverDistributionData.latestIntervalIndex;
+            const latestTurnover = turnoverDistributionData.latestTurnover;
+            const latestDate = turnoverDistributionData.latestDate;
+            const stock = turnoverDistributionData.stock;
+
+            // 准备柱状图数据
+            const data = [];
+            for (let i = 0; i < intervalCounts.length; i++) {
+                const item = {
+                    value: intervalCounts[i],
+                    itemStyle: {
+                        color: i === latestIntervalIndex ? '#e74c3c' : '#3498db' // 最新区间标记为红色
+                    }
+                };
+                data.push(item);
+            }
+
+            // 创建柱状图
+            const chart = echarts.init(document.getElementById('hkTurnoverDistributionChart'));
+            window.hkTurnoverDistributionChart = chart;
+
+            const option = {
+                title: {
+                    text: `${stock} 港股换手率分布分析`,
+                    left: 'center',
+                    top: 16,
+                    textStyle: {
+                        fontSize: 18,
+                        fontWeight: '600',
+                        color: '#1f2937',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                    borderColor: '#e5e7eb',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                    textStyle: { color: '#374151', fontSize: 13 },
+                    confine: false,
+                    appendToBody: true,
+                    enterable: true,
+                    hideDelay: 100,
+                    axisPointer: {
+                        type: 'shadow',
+                        shadowStyle: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    formatter: function (params) {
+                        const dataIndex = params[0].dataIndex;
+                        const count = params[0].value;
+                        const label = intervalLabels[dataIndex];
+                        let tooltipText = `<div style="padding: 8px;">
+                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 8px; font-size: 14px;">区间: ${label}</div>
+                            <div style="color: #6b7280; font-size: 13px;">天数: <span style="font-weight: 600; color: #1f2937;">${count}</span></div>`;
+
+                        if (dataIndex === latestIntervalIndex) {
+                            tooltipText += `<div style="color: #ef4444; font-size: 13px; margin-top: 4px;">
+                                最新换手率: <span style="font-weight: 600;">${latestTurnover}</span><br/>
+                                <span style="font-size: 12px;">(${latestDate})</span>
+                            </div>`;
+                        }
+
+                        tooltipText += '</div>';
+                        return tooltipText;
+                    }
+                },
+                grid: {
+                    left: '6%',
+                    right: '6%',
+                    bottom: '18%',
+                    top: '22%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: intervalLabels,
+                    axisLabel: {
+                        fontSize: 11,
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        rotate: 45,
+                        interval: 99, // 每100个显示一个标签，避免过于密集
+                        margin: 12
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#e5e7eb',
+                            width: 1
+                        }
+                    },
+                    axisTick: {
+                        show: false
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '天数',
+                    nameTextStyle: {
+                        color: '#6b7280',
+                        fontSize: 12,
+                        fontWeight: '500'
+                    },
+                    axisLabel: {
+                        fontSize: 12,
+                        color: '#6b7280',
+                        fontWeight: '500'
+                    },
+                    axisLine: {
+                        show: false
+                    },
+                    axisTick: {
+                        show: false
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#f3f4f6',
+                            type: 'dashed'
+                        }
+                    }
+                },
+                series: [{
+                    name: '天数',
+                    type: 'bar',
+                    data: data,
+                    barWidth: '60%',
+                    itemStyle: {
+                        borderRadius: [4, 4, 0, 0]
+                    }
+                }]
+            };
+
+            try {
+                chart.setOption(option);
+            } catch (error) {
+                console.error('设置港股换手率分布图表选项失败:', error.message);
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('页面加载完成，初始化switch事件监听器');
+            
+            // 初始化switch切换事件
+            const analysisSwitch = document.getElementById('analysisSwitch');
+            console.log('找到switch元素:', analysisSwitch);
+            
+            if (analysisSwitch) {
+                analysisSwitch.addEventListener('change', function() {
+                    const useYearlyData = this.checked;
+                    console.log('Switch切换事件触发! 当前状态:', useYearlyData ? '按年度' : '按报告期');
+                    console.log('globalHkAnalysisData存在:', !!globalHkAnalysisData);
+                    
+                    // 重新绘制港股图表（如果存在的话）
+                    if (globalHkAnalysisData) {
+                        console.log('开始重新绘制港股图表...');
+                        redrawHkCharts(useYearlyData);
+                        console.log('港股图表重新绘制完成');
+                    } else {
+                        console.log('没有可用的港股分析数据');
+                    }
+                    
+                    // 重新绘制A股图表（如果存在的话）
+                    if (globalAShareAnalysisData) {
+                        console.log('开始重新绘制A股图表...');
+                        redrawAShareCharts(useYearlyData);
+                        console.log('A股图表重新绘制完成');
+                    } else {
+                        console.log('没有可用的A股分析数据');
+                    }
+                });
+                
+                console.log('Switch事件监听器设置成功');
+            } else {
+                console.error('未找到analysisSwitch元素');
+            }
+        });
+    </script>
+</body>
+
+</html>
