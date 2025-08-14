@@ -65,9 +65,6 @@ mvn clean compile
 mvn spring-boot:run
 ```
 
-### 4. 访问系统
-打开浏览器访问: http://localhost:8080
-
 ## 📖 使用说明
 
 ### A股分析
