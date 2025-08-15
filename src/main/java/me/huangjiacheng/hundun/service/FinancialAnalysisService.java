@@ -29,9 +29,10 @@ public class FinancialAnalysisService {
      * 综合分析上市公司财务状况，包括负债结构和资产结构
      * 
      * @param symbol 股票代码
+     * @param stockName 股票名称
      * @return Map: { debtAnalysis, assetAnalysis }
      */
-    public Map<String, Object> analyzeFinancialStructure(String symbol) {
+    public Map<String, Object> analyzeFinancialStructure(String symbol, String stockName) {
         Map<String, Object> result = new HashMap<>();
         result.put("symbol", symbol);
 
@@ -487,7 +488,7 @@ public class FinancialAnalysisService {
      * @param stock 股票代码（5位数字）
      * @return 综合分析结果
      */
-    public Map<String, Object> analyzeHkFinancialStructure(String stock) {
+    public Map<String, Object> analyzeHkFinancialStructure(String stock, String stockName) {
         Map<String, Object> result = new HashMap<>();
         result.put("stock", stock);
 

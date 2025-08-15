@@ -6,6 +6,8 @@ import me.huangjiacheng.hundun.service.StockWatchlistService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -13,18 +15,31 @@ import java.util.List;
  */
 @Service
 public class StockWatchlistServiceImpl implements StockWatchlistService {
-    
+
     @Autowired
     private StockWatchlistMapper stockWatchlistMapper;
-    
+
     @Override
     public boolean addStock(StockWatchlist stockWatchlist) {
         try {
+            // 设置时间
+            String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            stockWatchlist.setCreatedTime(currentTime);
+            stockWatchlist.setUpdatedTime(currentTime);
+            
+            // 设置默认值
+            if (stockWatchlist.getPeTtm() == null) stockWatchlist.setPeTtm(0.0);
+            if (stockWatchlist.getRoe() == null) stockWatchlist.setRoe(0.0);
+            if (stockWatchlist.getProfitQuality() == null) stockWatchlist.setProfitQuality(0.0);
+            if (stockWatchlist.getAssetsQuality() == null) stockWatchlist.setAssetsQuality(0.0);
+            if (stockWatchlist.getPeScore() == null) stockWatchlist.setPeScore(0.0);
+            
             // 先检查股票是否已存在
             StockWatchlist existingStock = stockWatchlistMapper.selectByStockCode(stockWatchlist.getStockCode());
             if (existingStock != null) {
                 // 如果已存在，则更新
                 stockWatchlist.setId(existingStock.getId());
+                stockWatchlist.setCreatedTime(existingStock.getCreatedTime()); // 保持原创建时间
                 return stockWatchlistMapper.update(stockWatchlist) > 0;
             } else {
                 // 如果不存在，则插入
@@ -35,7 +50,7 @@ public class StockWatchlistServiceImpl implements StockWatchlistService {
             return false;
         }
     }
-    
+
     @Override
     public boolean deleteStock(String stockCode) {
         try {
@@ -45,29 +60,55 @@ public class StockWatchlistServiceImpl implements StockWatchlistService {
             return false;
         }
     }
-    
+
     @Override
     public boolean updateStock(StockWatchlist stockWatchlist) {
         try {
+            // 设置更新时间
+            String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            stockWatchlist.setUpdatedTime(currentTime);
+            
+            // 设置默认值
+            if (stockWatchlist.getPeTtm() == null) stockWatchlist.setPeTtm(0.0);
+            if (stockWatchlist.getRoe() == null) stockWatchlist.setRoe(0.0);
+            if (stockWatchlist.getProfitQuality() == null) stockWatchlist.setProfitQuality(0.0);
+            if (stockWatchlist.getAssetsQuality() == null) stockWatchlist.setAssetsQuality(0.0);
+            if (stockWatchlist.getPeScore() == null) stockWatchlist.setPeScore(0.0);
+            
             return stockWatchlistMapper.update(stockWatchlist) > 0;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
-    
+
     @Override
     public StockWatchlist getStockByCode(String stockCode) {
-        return stockWatchlistMapper.selectByStockCode(stockCode);
+        try {
+            return stockWatchlistMapper.selectByStockCode(stockCode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
-    
+
     @Override
     public List<StockWatchlist> getAllStocks() {
-        return stockWatchlistMapper.selectAll();
+        try {
+            return stockWatchlistMapper.selectAll();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
-    
+
     @Override
     public List<StockWatchlist> getStocksByType(Integer stockType) {
-        return stockWatchlistMapper.selectByStockType(stockType);
+        try {
+            return stockWatchlistMapper.selectByStockType(stockType);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

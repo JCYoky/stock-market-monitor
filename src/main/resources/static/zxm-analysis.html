@@ -1527,9 +1527,18 @@
             window.currentStockCode = stock;
             console.log('analyzeHkStock: 设置全局股票代码:', stock);
             
-            // 并行获取港股财务分析数据、基本信息和换手率分布数据
+            // 检查港股列表是否已加载
+            if (!hkStockList || hkStockList.length === 0) {
+                showError('港股列表尚未加载完成，请稍后重试');
+                return;
+            }
+            
+            // 从已加载的港股列表中获取股票名称，用于传递给后台API
+            const stockName = hkStockList.find(hkStock => hkStock.code === stock)?.name || '';
+            
+            // 并行获取所有数据，包括港股基本信息
             Promise.allSettled([
-                fetch(`http://localhost:8888/api/zxm/hk-financial-analysis?stock=${encodeURIComponent(stock)}`),
+                fetch(`http://localhost:8888/api/zxm/hk-financial-analysis?stock=${encodeURIComponent(stock)}&stockName=${encodeURIComponent(stockName)}`),
                 fetch(`http://localhost:8888/api/zxm/hk-basic-info?stock=${encodeURIComponent(stock)}`),
                 fetch(`http://localhost:8888/api/zxm/hk-turnover-distribution?stock=${encodeURIComponent(stock)}`)
             ])
@@ -1546,7 +1555,6 @@
                             displayHkBasicInfo(hkBasicInfo, stock);
                         }).catch(error => {
                             console.warn('港股基本信息解析失败:', error);
-                            // 基本信息失败不影响图表显示
                         });
                     } else {
                         console.warn('港股基本信息获取失败:', basicInfoResult.reason || '网络错误');
@@ -1603,10 +1611,20 @@
             // 设置全局股票代码，供自选股功能使用
             window.currentStockCode = symbol;
             
-            // 并行获取股票基本信息、财务分析数据、市盈率数据、换手率分布数据和股东户数数据
+            // 检查股票列表是否已加载
+            if (!aShareStockList || aShareStockList.length === 0) {
+                showError('股票列表尚未加载完成，请稍后重试');
+                return;
+            }
+            
+            // 从已加载的股票列表中获取股票名称，用于传递给后台API
+            const stockName = aShareStockList.find(stock => stock.code === symbol)?.name || '';
+            console.log('A股分析 - 股票代码:', symbol, '股票名称:', stockName, '股票列表长度:', aShareStockList.length);
+            
+            // 并行获取所有数据，包括股票基本信息
             Promise.all([
                 fetch(`http://localhost:8888/api/zxm/stock-info?symbol=${encodeURIComponent(symbol)}`),
-                fetch(`http://localhost:8888/api/zxm/comprehensive-analysis?symbol=${encodeURIComponent(symbol)}`),
+                fetch(`http://localhost:8888/api/zxm/comprehensive-analysis?symbol=${encodeURIComponent(symbol)}&stockName=${encodeURIComponent(stockName)}`),
                 fetch(`http://localhost:8888/api/zxm/valuation-data?symbol=${encodeURIComponent(symbol)}`),
                 fetch(`http://localhost:8888/api/zxm/turnover-distribution?symbol=${encodeURIComponent(symbol)}`),
                 fetch(`http://localhost:8888/api/zxm/shareholder-data?symbol=${encodeURIComponent(symbol)}`)
@@ -1664,6 +1682,7 @@
                     }
                 })
                 .catch(error => {
+                    console.error('A股分析失败:', error);
                     completeLoading();
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;

@@ -1,60 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="me.huangjiacheng.hundun.mapper.StockWatchlistMapper">
-    
+
     <!-- 结果映射 -->
     <resultMap id="BaseResultMap" type="me.huangjiacheng.hundun.model.StockWatchlist">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="stock_code" property="stockCode" jdbcType="VARCHAR"/>
         <result column="stock_name" property="stockName" jdbcType="VARCHAR"/>
         <result column="stock_type" property="stockType" jdbcType="INTEGER"/>
-        <result column="created_time" property="createdTime" jdbcType="TIMESTAMP"/>
-        <result column="updated_time" property="updatedTime" jdbcType="TIMESTAMP"/>
+        <result column="pe_ttm" property="peTtm" jdbcType="DOUBLE"/>
+        <result column="roe" property="roe" jdbcType="DOUBLE"/>
+        <result column="profit_quality" property="profitQuality" jdbcType="DOUBLE"/>
+        <result column="assets_quality" property="assetsQuality" jdbcType="DOUBLE"/>
+        <result column="pe_score" property="peScore" jdbcType="DOUBLE"/>
+        <result column="created_time" property="createdTime" jdbcType="VARCHAR"/>
+        <result column="updated_time" property="updatedTime" jdbcType="VARCHAR"/>
     </resultMap>
-    
-    <!-- 基础字段 -->
+
+    <!-- 通用字段 -->
     <sql id="Base_Column_List">
-        id, stock_code, stock_name, stock_type, created_time, updated_time
+        id, stock_code, stock_name, stock_type, pe_ttm, roe, profit_quality, assets_quality, pe_score, created_time, updated_time
     </sql>
-    
-    <!-- 插入自选股 -->
-    <insert id="insert" parameterType="me.huangjiacheng.hundun.model.StockWatchlist">
-        INSERT INTO stock_watchlist (stock_code, stock_name, stock_type)
-        VALUES (#{stockCode}, #{stockName}, #{stockType})
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="me.huangjiacheng.hundun.model.StockWatchlist" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO stock_watchlist (
+            stock_code, stock_name, stock_type, pe_ttm, roe, profit_quality, assets_quality, pe_score, created_time, updated_time
+        ) VALUES (
+            #{stockCode}, #{stockName}, #{stockType}, #{peTtm}, #{roe}, #{profitQuality}, #{assetsQuality}, #{peScore}, 
+            #{createdTime}, #{updatedTime}
+        )
     </insert>
-    
-    <!-- 根据股票代码删除自选股 -->
+
+    <!-- 根据股票代码删除 -->
     <delete id="deleteByStockCode" parameterType="string">
         DELETE FROM stock_watchlist WHERE stock_code = #{stockCode}
     </delete>
-    
-    <!-- 更新自选股信息 -->
+
+    <!-- 更新 -->
     <update id="update" parameterType="me.huangjiacheng.hundun.model.StockWatchlist">
-        UPDATE stock_watchlist 
-        SET stock_name = #{stockName}, stock_type = #{stockType}
-        WHERE stock_code = #{stockCode}
+        UPDATE stock_watchlist SET
+            stock_name = #{stockName},
+            stock_type = #{stockType},
+            pe_ttm = #{peTtm},
+            roe = #{roe},
+            profit_quality = #{profitQuality},
+            assets_quality = #{assetsQuality},
+            pe_score = #{peScore},
+            updated_time = #{updatedTime}
+        WHERE id = #{id}
     </update>
-    
-    <!-- 根据股票代码查询自选股 -->
+
+    <!-- 根据股票代码查询 -->
     <select id="selectByStockCode" parameterType="string" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
-        FROM stock_watchlist 
+        FROM stock_watchlist
         WHERE stock_code = #{stockCode}
     </select>
-    
-    <!-- 查询所有自选股 -->
+
+    <!-- 查询所有 -->
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
-        FROM stock_watchlist 
+        FROM stock_watchlist
         ORDER BY created_time DESC
     </select>
-    
-    <!-- 根据股票类型查询自选股 -->
+
+    <!-- 根据股票类型查询 -->
     <select id="selectByStockType" parameterType="integer" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
-        FROM stock_watchlist 
+        FROM stock_watchlist
         WHERE stock_type = #{stockType}
         ORDER BY created_time DESC
     </select>
-    
+
 </mapper>

@@ -41,12 +41,13 @@ public class AnalysisApiController {
     /**
      * 获取股票综合分析数据（包括负债结构和资产结构）
      * @param symbol 股票代码
+     * @param stockName 股票名称
      * @return 综合分析结果
      */
     @GetMapping("/comprehensive-analysis")
-    public Map<String, Object> getComprehensiveAnalysis(@RequestParam String symbol) {
+    public Map<String, Object> getComprehensiveAnalysis(@RequestParam String symbol, @RequestParam(required = false) String stockName) {
         try {
-            return zxmFinancialAnalysisService.analyzeFinancialStructure(symbol);
+            return zxmFinancialAnalysisService.analyzeFinancialStructure(symbol, stockName);
         } catch (Exception e) {
             Map<String, Object> errorResult = new java.util.HashMap<>();
             errorResult.put("success", false);
@@ -215,12 +216,13 @@ public class AnalysisApiController {
     /**
      * 港股综合分析
      * @param stock 股票代码（5位数字）
+     * @param stockName 股票名称
      * @return 综合分析结果
      */
     @GetMapping("/hk-financial-analysis")
-    public Map<String, Object> analyzeHkFinancialStructure(@RequestParam String stock) {
+    public Map<String, Object> analyzeHkFinancialStructure(@RequestParam String stock, @RequestParam(required = false) String stockName) {
         try {
-            return zxmFinancialAnalysisService.analyzeHkFinancialStructure(stock);
+            return zxmFinancialAnalysisService.analyzeHkFinancialStructure(stock, stockName);
         } catch (Exception e) {
             Map<String, Object> errorResult = new HashMap<>();
             errorResult.put("success", false);
