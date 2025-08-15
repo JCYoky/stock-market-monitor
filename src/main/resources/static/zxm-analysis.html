@@ -4772,8 +4772,8 @@
                 console.log('恢复到欢迎页面');
             }
             
-            // 重置状态
-            currentPageState = 'welcome';
+            // 注意：不要重置状态，保持当前状态
+            // 这样如果用户再次查看自选股，状态仍然是正确的
         }
 
         function loadWatchlistData() {
