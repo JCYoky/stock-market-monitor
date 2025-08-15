@@ -95,7 +95,16 @@ public class StockWatchlistServiceImpl implements StockWatchlistService {
     @Override
     public List<StockWatchlist> getAllStocks() {
         try {
-            return stockWatchlistMapper.selectAll();
+            List<StockWatchlist> stocks = stockWatchlistMapper.selectAll();
+            if (stocks != null && !stocks.isEmpty()) {
+                            // 排序：按市盈率得分从大到小排序
+            stocks.sort((s1, s2) -> {
+                Double score1 = s1.getPeScore() != null ? s1.getPeScore() : 0.0;
+                Double score2 = s2.getPeScore() != null ? s2.getPeScore() : 0.0;
+                return score2.compareTo(score1);
+            });
+            }
+            return stocks;
         } catch (Exception e) {
             e.printStackTrace();
             return null;

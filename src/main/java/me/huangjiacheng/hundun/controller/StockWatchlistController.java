@@ -50,8 +50,16 @@ public class StockWatchlistController {
             // 检查是否已存在
             StockWatchlist existingStock = stockWatchlistService.getStockByCode(stockWatchlist.getStockCode());
             if (existingStock != null) {
-                // 更新现有记录
+                // 更新现有记录：保留原有财务数据，只更新类型
                 stockWatchlist.setId(existingStock.getId());
+                stockWatchlist.setPeTtm(existingStock.getPeTtm());
+                stockWatchlist.setRoe(existingStock.getRoe());
+                stockWatchlist.setProfitQuality(existingStock.getProfitQuality());
+                stockWatchlist.setAssetsQuality(existingStock.getAssetsQuality());
+                stockWatchlist.setPeScore(existingStock.getPeScore());
+                stockWatchlist.setCreatedTime(existingStock.getCreatedTime());
+                stockWatchlist.setUpdatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                
                 boolean updated = stockWatchlistService.updateStock(stockWatchlist);
                 if (updated) {
                     response.put("success", true);
