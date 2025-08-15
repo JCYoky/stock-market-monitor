@@ -141,16 +141,25 @@ public class StockWatchlistController {
      * 根据股票代码查询自选股
      */
     @GetMapping("/stock/{stockCode}")
-    public ResponseEntity<StockWatchlist> getStockByCode(@PathVariable String stockCode) {
+    public ResponseEntity<Map<String, Object>> getStockByCode(@PathVariable String stockCode) {
+        Map<String, Object> response = new HashMap<>();
+        
         try {
             StockWatchlist stock = stockWatchlistService.getStockByCode(stockCode);
             if (stock != null) {
-                return ResponseEntity.ok(stock);
+                response.put("success", true);
+                response.put("data", stock);
+                response.put("message", "获取自选股成功");
+                return ResponseEntity.ok(response);
             } else {
-                return ResponseEntity.notFound().build();
+                response.put("success", false);
+                response.put("message", "股票不在自选股中");
+                return ResponseEntity.ok(response);
             }
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            response.put("success", false);
+            response.put("message", "查询失败：" + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 
@@ -158,12 +167,19 @@ public class StockWatchlistController {
      * 获取所有自选股
      */
     @GetMapping("/all")
-    public ResponseEntity<List<StockWatchlist>> getAllStocks() {
+    public ResponseEntity<Map<String, Object>> getAllStocks() {
+        Map<String, Object> response = new HashMap<>();
+        
         try {
             List<StockWatchlist> stocks = stockWatchlistService.getAllStocks();
-            return ResponseEntity.ok(stocks);
+            response.put("success", true);
+            response.put("data", stocks);
+            response.put("message", "获取自选股成功");
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            response.put("success", false);
+            response.put("message", "获取自选股失败：" + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 
@@ -171,15 +187,24 @@ public class StockWatchlistController {
      * 根据类型获取自选股
      */
     @GetMapping("/type/{stockType}")
-    public ResponseEntity<List<StockWatchlist>> getStocksByType(@PathVariable Integer stockType) {
+    public ResponseEntity<Map<String, Object>> getStocksByType(@PathVariable Integer stockType) {
+        Map<String, Object> response = new HashMap<>();
+        
         try {
             if (stockType != 1 && stockType != 2) {
-                return ResponseEntity.badRequest().build();
+                response.put("success", false);
+                response.put("message", "股票类型必须为1(观察股)或2(持仓股)");
+                return ResponseEntity.badRequest().body(response);
             }
             List<StockWatchlist> stocks = stockWatchlistService.getStocksByType(stockType);
-            return ResponseEntity.ok(stocks);
+            response.put("success", true);
+            response.put("data", stocks);
+            response.put("message", "获取自选股成功");
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            response.put("success", false);
+            response.put("message", "获取自选股失败：" + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 }
