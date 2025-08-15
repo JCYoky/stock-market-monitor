@@ -4857,19 +4857,8 @@
             // 设置全局股票代码
             window.currentStockCode = stockCode;
             
-            // 根据股票代码判断是A股还是港股，然后调用相应的分析函数
-            if (stockCode.startsWith('00') || stockCode.startsWith('30') || stockCode.startsWith('60')) {
-                // A股
-                console.log('启动A股分析:', stockCode);
-                analyzeAShareStock(stockCode, stockName);
-            } else if (stockCode.startsWith('0') && stockCode.length === 5) {
-                // 港股
-                console.log('启动港股分析:', stockCode);
-                analyzeHkStock(stockCode, stockName);
-            } else {
-                console.error('无法识别股票类型:', stockCode);
-                alert('无法识别股票类型，请检查股票代码');
-            }
+            // 调用标准的分析函数，确保加载动画和页面切换逻辑完全一致
+            analyzeStock();
         }
     </script>
 </body>
