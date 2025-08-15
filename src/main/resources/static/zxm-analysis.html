@@ -3111,8 +3111,12 @@
                     watchBtn.style.display = 'inline-block';
                 }
                 
-                // 添加删除按钮
-                addDeleteButton();
+                // 只有当股票是观察股(type=1)或持仓股(type=2)时才显示删除按钮
+                if (stockType === 1 || stockType === 2) {
+                    addDeleteButton();
+                } else {
+                    removeDeleteButton();
+                }
             } else {
                 // 股票不在自选股中，显示默认按钮
                 // 移除标题中的标记
