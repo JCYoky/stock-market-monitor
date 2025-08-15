@@ -1693,6 +1693,9 @@
             document.getElementById('welcomeSection').style.display = 'none';
             document.getElementById('analyzeBtn').disabled = true;
             document.getElementById('flipStoneBtn').disabled = true;
+            
+            // 设置页面状态为分析中
+            currentPageState = 'analysis';
 
             // 重置加载步骤
             resetLoadingSteps();
@@ -4676,6 +4679,10 @@
         document.addEventListener('DOMContentLoaded', function () {
             console.log('页面加载完成，初始化switch事件监听器');
             
+            // 初始化页面状态
+            currentPageState = 'welcome';
+            console.log('初始化页面状态:', currentPageState);
+            
             // 初始化switch切换事件
             const analysisSwitch = document.getElementById('analysisSwitch');
             console.log('找到switch元素:', analysisSwitch);
@@ -4711,17 +4718,33 @@
             }
         });
 
+        // 全局变量：跟踪页面状态
+        let currentPageState = 'welcome'; // 'welcome', 'analysis', 'watchlist'
+        
         // 自选股相关函数
         function showWatchlist() {
-            // 隐藏欢迎区域
-            const welcomeSection = document.getElementById('welcomeSection');
-            if (welcomeSection) {
-                welcomeSection.style.display = 'none';
+            // 记住当前页面状态
+            if (document.getElementById('chartContainer').style.display === 'block') {
+                currentPageState = 'analysis';
+            } else if (document.getElementById('welcomeSection').style.display === 'block') {
+                currentPageState = 'welcome';
             }
+            
+            // 隐藏所有其他区域
+            const welcomeSection = document.getElementById('welcomeSection');
+            const chartContainer = document.getElementById('chartContainer');
+            const stockInfoSection = document.getElementById('stockInfoSection');
+            
+            if (welcomeSection) welcomeSection.style.display = 'none';
+            if (chartContainer) chartContainer.style.display = 'none';
+            if (stockInfoSection) stockInfoSection.style.display = 'none';
             
             // 显示自选股区域
             const watchlistSection = document.getElementById('watchlistSection');
             watchlistSection.style.display = 'block';
+            
+            // 更新状态
+            currentPageState = 'watchlist';
             
             // 加载自选股数据
             loadWatchlistData();
@@ -4732,11 +4755,25 @@
             const watchlistSection = document.getElementById('watchlistSection');
             watchlistSection.style.display = 'none';
             
-            // 显示欢迎区域
-            const welcomeSection = document.getElementById('welcomeSection');
-            if (welcomeSection) {
-                welcomeSection.style.display = 'block';
+            // 根据之前的状态恢复页面
+            if (currentPageState === 'analysis') {
+                // 恢复到分析结果页面
+                const chartContainer = document.getElementById('chartContainer');
+                const stockInfoSection = document.getElementById('stockInfoSection');
+                if (chartContainer) chartContainer.style.display = 'block';
+                if (stockInfoSection) stockInfoSection.style.display = 'block';
+                console.log('恢复到分析结果页面');
+            } else {
+                // 恢复到欢迎页面
+                const welcomeSection = document.getElementById('welcomeSection');
+                if (welcomeSection) {
+                    welcomeSection.style.display = 'block';
+                }
+                console.log('恢复到欢迎页面');
             }
+            
+            // 重置状态
+            currentPageState = 'welcome';
         }
 
         function loadWatchlistData() {
