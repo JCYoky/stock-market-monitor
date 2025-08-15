@@ -8,6 +8,8 @@ import me.huangjiacheng.hundun.model.StockTurnoverData;
 import me.huangjiacheng.hundun.model.StockFinancialHkBalanceSheet;
 import me.huangjiacheng.hundun.model.StockFinancialHkIncomeStatement;
 import me.huangjiacheng.hundun.model.StockFinancialHkCashFlow;
+import me.huangjiacheng.hundun.model.StockWatchlist;
+import me.huangjiacheng.hundun.model.StockInfo;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,9 @@ public class FinancialAnalysisService {
 
     @Autowired
     private AKShareService akShareService;
+
+    @Autowired
+    private StockWatchlistService stockWatchlistService;
 
     /**
      * 综合分析上市公司财务状况，包括负债结构和资产结构
@@ -326,6 +331,7 @@ public class FinancialAnalysisService {
 
         // 获取市盈率数据
         List<StockValuationData> valuationDataList = akShareService.getStockValuationData(symbol);
+        System.out.println("valuationDataList个数: " + valuationDataList.size());
         Map<String, Object> valuationAnalysis = new HashMap<>();
         valuationAnalysis.put("symbol", symbol);
         valuationAnalysis.put("valuationData", valuationDataList);
@@ -333,6 +339,277 @@ public class FinancialAnalysisService {
         result.put("valuationAnalysis", valuationAnalysis);
 
         result.put("success", true);
+
+        // 构建StockWatchlist对象，使用最新报告期的数据
+        try {
+            // 获取最新报告期的数据
+            String latestPeriod = periodData.keySet().iterator().next(); // 由于使用TreeMap倒序，第一个就是最新的
+            Map<String, Object> latestData = periodData.get(latestPeriod);
+            
+            if (latestData != null) {
+                StockFinancialDebtThs latestBalanceSheet = (StockFinancialDebtThs) latestData.get("balanceSheet");
+                StockFinancialBenefitThs latestIncomeStatement = (StockFinancialBenefitThs) latestData.get("incomeStatement");
+                
+                if (latestBalanceSheet != null && latestIncomeStatement != null) {
+                    // 构建StockWatchlist对象
+                    StockWatchlist stockWatchlist = new StockWatchlist();
+                    stockWatchlist.setStockCode(symbol);
+                    stockWatchlist.setStockName(stockName);
+                    stockWatchlist.setStockType(0); // 默认类型为0，后续业务逻辑会设置
+                    
+                    // 设置财务指标（使用最新报告期数据）
+                    // 1. peTtm为最新的StockValuationData
+                    if (valuationDataList != null && !valuationDataList.isEmpty()) {
+                        StockValuationData latestValuation = valuationDataList.get(valuationDataList.size() - 1); // 最新的估值数据（按日期排序，最新的在最后）
+                        if (latestValuation != null && latestValuation.getValue() != null) {
+                            try {
+                                double peTtm = Double.parseDouble(latestValuation.getValue());
+                                stockWatchlist.setPeTtm(peTtm);
+                            } catch (NumberFormatException e) {
+                                stockWatchlist.setPeTtm(0.0);
+                                System.err.println("解析peTtm失败: " + e.getMessage());
+                            }
+                        } else {
+                            stockWatchlist.setPeTtm(0.0);
+                        }
+                                        } else {
+                        stockWatchlist.setPeTtm(0.0);
+                    }
+                    
+                    // 2. roe为StockInfo中的ROE
+                    try {
+                        StockInfo stockInfo = akShareService.getStockIndividualInfo(symbol);
+                        if (stockInfo != null && stockInfo.getRoe() != null) {
+                            try {
+                                String roeStr = stockInfo.getRoe().trim();
+                                // 去掉百分号，然后解析为数字
+                                if (roeStr.endsWith("%")) {
+                                    roeStr = roeStr.substring(0, roeStr.length() - 1);
+                                }
+                                double roe = Double.parseDouble(roeStr);
+                                stockWatchlist.setRoe(roe);
+                                System.out.println("设置ROE成功: " + roe);
+                            } catch (NumberFormatException e) {
+                                stockWatchlist.setRoe(0.0);
+                                System.err.println("解析roe失败: " + e.getMessage());
+                            }
+                        } else {
+                            stockWatchlist.setRoe(0.0);
+                        }
+                    } catch (Exception e) {
+                        stockWatchlist.setRoe(0.0);
+                        System.err.println("获取StockInfo失败: " + e.getMessage());
+                    }
+                    
+                    // 3. 利润质量为近五年年度财报现金流量表中经营现金流量净额之和除以近五年年度财务报表中净利润之和
+                    try {
+                        double totalOperatingCashFlow = 0.0;
+                        double totalNetProfit = 0.0;
+                        int yearCount = 0;
+                        System.out.println("开始计算利润质量，筛选年度报表...");
+                        
+                        // 遍历数据，筛选出年度报表
+                        for (Map.Entry<String, Map<String, Object>> periodEntry : periodData.entrySet()) {
+                            if (yearCount >= 5) break; // 只取近五年
+                            
+                            String period = periodEntry.getKey();
+                            // 筛选年度报表：报告期包含"12-31"或"年"的为年度报表
+                            if (!isAnnualReport(period)) {
+                                continue; // 跳过非年度报表
+                            }
+                            
+                            Map<String, Object> data = periodEntry.getValue();
+                            StockFinancialCashThs cashFlow = (StockFinancialCashThs) data.get("cashFlowStatement");
+                            StockFinancialBenefitThs incomeStatement = (StockFinancialBenefitThs) data.get("incomeStatement");
+                            
+                            if (cashFlow != null && incomeStatement != null) {
+                                // 获取经营现金流量净额
+                                String operatingCashFlowStr = cashFlow.getNetOperatingCash();
+                                if (operatingCashFlowStr != null && !operatingCashFlowStr.trim().isEmpty()) {
+                                    try {
+                                        double operatingCashFlow = parseFinancialValue(operatingCashFlowStr);
+                                        totalOperatingCashFlow += operatingCashFlow;
+                                    } catch (Exception e) {
+                                        System.err.println("解析经营现金流量净额失败: " + e.getMessage());
+                                    }
+                                }
+                                
+                                // 获取净利润
+                                String netProfitStr = incomeStatement.getNetProfit();
+                                if (netProfitStr != null && !netProfitStr.trim().isEmpty()) {
+                                    try {
+                                        double netProfit = parseFinancialValue(netProfitStr);
+                                        totalNetProfit += netProfit;
+                                    } catch (Exception e) {
+                                        System.err.println("解析净利润失败: " + e.getMessage());
+                                    }
+                                }
+                                
+                                yearCount++;
+                            }
+                        }
+                        
+                        // 计算利润质量
+                        if (totalNetProfit != 0) {
+                            double profitQuality = totalOperatingCashFlow / totalNetProfit;
+                            stockWatchlist.setProfitQuality(profitQuality);
+                        } else {
+                            stockWatchlist.setProfitQuality(0.0);
+                        }
+                        
+                        System.out.println("利润质量计算完成 - 经营现金流量净额总和: " + totalOperatingCashFlow + ", 净利润总和: " + totalNetProfit + ", 利润质量: " + stockWatchlist.getProfitQuality());
+                        
+                    } catch (Exception e) {
+                        stockWatchlist.setProfitQuality(0.0);
+                        System.err.println("计算利润质量失败: " + e.getMessage());
+                    }
+                    
+                    // 4. 资产质量得分为100-两应收一预付占比*100-商誉和无形资产占比*100-存货占比*100
+                    try {
+                        // 使用最新报告期的资产结构分析数据（前面已经计算过了）
+                        Map<String, Double> latestAssetRatios = assetRatios.get(latestPeriod);
+                        
+                        if (latestAssetRatios != null) {
+                            // 直接使用已经计算好的比例
+                            Double receivablesPrepaymentsRatio = latestAssetRatios.get("两应收一预付占比");
+                            Double goodwillIntangibleRatio = latestAssetRatios.get("商誉和无形资产占比");
+                            Double inventoryRatio = latestAssetRatios.get("存货占比");
+                            
+                            if (receivablesPrepaymentsRatio != null && goodwillIntangibleRatio != null && inventoryRatio != null) {
+                                // 计算资产质量得分
+                                double assetsQuality = 100 - (receivablesPrepaymentsRatio * 100) - (goodwillIntangibleRatio * 100) - (inventoryRatio * 100);
+                                
+                                // 确保得分在合理范围内
+                                assetsQuality = Math.max(0, Math.min(100, assetsQuality));
+                                
+                                stockWatchlist.setAssetsQuality(assetsQuality);
+                                
+                                System.out.println("资产质量得分计算完成 - 两应收一预付占比: " + (receivablesPrepaymentsRatio * 100) + "%, 商誉和无形资产占比: " + (goodwillIntangibleRatio * 100) + "%, 存货占比: " + (inventoryRatio * 100) + "%, 资产质量得分: " + assetsQuality);
+                            } else {
+                                stockWatchlist.setAssetsQuality(0.0);
+                                System.err.println("最新报告期资产结构分析数据不完整");
+                            }
+                        } else {
+                            stockWatchlist.setAssetsQuality(0.0);
+                            System.err.println("最新报告期资产结构分析数据为空");
+                        }
+                        
+                    } catch (Exception e) {
+                        stockWatchlist.setAssetsQuality(0.0);
+                        System.err.println("计算资产质量得分失败: " + e.getMessage());
+                    }
+                    
+                    // 5. 市盈率得分：将历史市盈率数据从小到大排序，计算最新市盈率在排序后的位置百分比
+                    try {
+                        if (valuationDataList != null && !valuationDataList.isEmpty()) {
+                            // 提取所有有效的市盈率数据
+                            List<Double> validPeValues = new ArrayList<>();
+                            Double latestPeValue = null;
+                            
+                            for (StockValuationData valuation : valuationDataList) {
+                                if (valuation.getValue() != null && !valuation.getValue().trim().isEmpty()) {
+                                    try {
+                                        double peValue = Double.parseDouble(valuation.getValue());
+                                        if (peValue < 0) {
+                                            // 负的市盈率按无穷大处理
+                                            validPeValues.add(Double.POSITIVE_INFINITY);
+                                        } else {
+                                            validPeValues.add(peValue);
+                                        }
+                                    } catch (NumberFormatException e) {
+                                        // 忽略无法解析的数据
+                                        continue;
+                                    }
+                                }
+                            }
+                            
+                            if (!validPeValues.isEmpty()) {
+                                // 获取最新市盈率（数据按时间正序，最新的在最后）
+                                StockValuationData latestValuation = valuationDataList.get(valuationDataList.size() - 1);
+                                if (latestValuation.getValue() != null && !latestValuation.getValue().trim().isEmpty()) {
+                                    try {
+                                        latestPeValue = Double.parseDouble(latestValuation.getValue());
+                                        if (latestPeValue < 0) {
+                                            // 负的市盈率按无穷大处理
+                                            latestPeValue = Double.POSITIVE_INFINITY;
+                                        }
+                                    } catch (NumberFormatException e) {
+                                        latestPeValue = null;
+                                    }
+                                }
+                                
+                                if (latestPeValue != null) {
+                                    // 将市盈率数据从小到大排序
+                                    Collections.sort(validPeValues);
+                                    
+                                    // 计算最新市盈率在排序后的位置
+                                    int position = Collections.binarySearch(validPeValues, latestPeValue);
+                                    if (position < 0) {
+                                        // 如果没找到完全匹配的值，计算插入位置
+                                        position = -(position + 1);
+                                    }
+                                    
+                                    // 计算百分比得分（位置越小，得分越高）
+                                    double peScore = ((double) (validPeValues.size() - position) / validPeValues.size()) * 100;
+                                    
+                                    // 确保得分在合理范围内
+                                    peScore = Math.max(0, Math.min(100, peScore));
+                                    
+                                    stockWatchlist.setPeScore(peScore);
+                                    
+                                    String latestPeDisplay = latestPeValue == Double.POSITIVE_INFINITY ? "无穷大(负值)" : String.valueOf(latestPeValue);
+                                    System.out.println("市盈率得分计算完成 - 历史数据总数: " + validPeValues.size() + ", 最新市盈率: " + latestPeDisplay + ", 排序位置: " + (position + 1) + ", 市盈率得分: " + peScore);
+                                } else {
+                                    stockWatchlist.setPeScore(0.0);
+                                    System.err.println("最新市盈率数据无效");
+                                }
+                            } else {
+                                stockWatchlist.setPeScore(0.0);
+                                System.err.println("没有有效的历史市盈率数据");
+                            }
+                        } else {
+                            stockWatchlist.setPeScore(0.0);
+                            System.err.println("市盈率历史数据为空");
+                        }
+                        
+                    } catch (Exception e) {
+                        stockWatchlist.setPeScore(0.0);
+                        System.err.println("计算市盈率得分失败: " + e.getMessage());
+                    }
+                    
+                    System.out.println("构建StockWatchlist对象: " + symbol + " - " + stockName + ", peTtm: " + stockWatchlist.getPeTtm() + ", roe: " + stockWatchlist.getRoe() + ", profitQuality: " + stockWatchlist.getProfitQuality() + ", assetsQuality: " + stockWatchlist.getAssetsQuality() + ", peScore: " + stockWatchlist.getPeScore());
+                    
+                    // 保存StockWatchlist对象到数据库
+                    try {
+                        // 检查是否已存在
+                        StockWatchlist existingStock = stockWatchlistService.getStockByCode(symbol);
+                        if (existingStock != null) {
+                            // 更新：保持原有StockType不变
+                            stockWatchlist.setStockType(existingStock.getStockType());
+                            stockWatchlist.setId(existingStock.getId());
+                            stockWatchlist.setCreatedTime(existingStock.getCreatedTime());
+                            stockWatchlist.setUpdatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                            
+                            stockWatchlistService.updateStock(stockWatchlist);
+                            System.out.println("更新StockWatchlist成功: " + symbol + ", 保持原有类型: " + existingStock.getStockType());
+                        } else {
+                            // 新增：StockType设为0
+                            stockWatchlist.setStockType(0);
+                            stockWatchlist.setCreatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                            stockWatchlist.setUpdatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                            
+                            stockWatchlistService.addStock(stockWatchlist);
+                            System.out.println("新增StockWatchlist成功: " + symbol + ", 类型设为: 0");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("保存StockWatchlist失败: " + symbol + " - " + e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // 构建StockWatchlist失败不影响主要分析结果
+            System.err.println("构建StockWatchlist对象失败: " + e.getMessage());
+        }
 
         return result;
     }
@@ -798,6 +1075,179 @@ public class FinancialAnalysisService {
             result.put("cashFlowAnalysis", cashFlowAnalysis);
             result.put("success", true);
 
+            // 构建StockWatchlist对象，使用最新报告期的数据
+            try {
+                // 获取最新报告期的数据
+                String latestPeriod = periodData.keySet().iterator().next(); // 由于使用TreeMap倒序，第一个就是最新的
+                Map<String, Object> latestData = periodData.get(latestPeriod);
+                
+                if (latestData != null) {
+                    StockFinancialHkBalanceSheet latestBalanceSheet = (StockFinancialHkBalanceSheet) latestData.get("balanceSheet");
+                    StockFinancialHkIncomeStatement latestIncomeStatement = (StockFinancialHkIncomeStatement) latestData.get("incomeStatement");
+                    
+                    if (latestBalanceSheet != null && latestIncomeStatement != null) {
+                        // 构建StockWatchlist对象
+                        StockWatchlist stockWatchlist = new StockWatchlist();
+                        stockWatchlist.setStockCode(stock);
+                        stockWatchlist.setStockName(stockName);
+                        stockWatchlist.setStockType(0); // 默认类型为0，后续业务逻辑会设置
+                        
+                        // 设置财务指标（使用最新报告期数据）
+                        // 1. peTtm为最新的StockValuationData（港股暂无市盈率TTM数据）
+                        stockWatchlist.setPeTtm(0.0);
+                        
+                        // 2. roe为StockInfo中的ROE（港股暂无ROE数据）
+                        stockWatchlist.setRoe(0.0);
+                        
+                        // 3. 利润质量为近五年年度财报现金流量表中经营现金流量净额之和除以近五年年度财务报表中净利润之和
+                        
+                        // 4. 资产质量得分为100-两应收一预付占比*100-商誉和无形资产占比*100-存货占比*100
+                        try {
+                            // 使用最新报告期的资产结构分析数据（前面已经计算过了）
+                            String hkLatestPeriod = periodData.keySet().iterator().next();
+                            Map<String, Double> hkLatestAssetRatios = assetRatios.get(hkLatestPeriod);
+                            
+                            if (hkLatestAssetRatios != null) {
+                                // 直接使用已经计算好的比例
+                                Double inventoryRatio = hkLatestAssetRatios.get("存货");
+                                Double goodwillRatio = hkLatestAssetRatios.get("商誉");
+                                Double intangibleRatio = hkLatestAssetRatios.get("无形资产");
+                                
+                                // 注意：港股的两应收一预付包含了存货，需要调整
+                                Double receivablesPrepaymentsRatio = hkLatestAssetRatios.get("两应收一预付");
+                                if (receivablesPrepaymentsRatio != null && inventoryRatio != null) {
+                                    // 减去存货占比，得到真正的两应收一预付占比
+                                    double adjustedReceivablesPrepaymentsRatio = receivablesPrepaymentsRatio - inventoryRatio;
+                                    
+                                    if (inventoryRatio != null && goodwillRatio != null && intangibleRatio != null) {
+                                        // 计算资产质量得分
+                                        double hkAssetsQuality = 100 - (adjustedReceivablesPrepaymentsRatio * 100) - ((goodwillRatio + intangibleRatio) * 100) - (inventoryRatio * 100);
+                                        
+                                        // 确保得分在合理范围内
+                                        hkAssetsQuality = Math.max(0, Math.min(100, hkAssetsQuality));
+                                        
+                                        stockWatchlist.setAssetsQuality(hkAssetsQuality);
+                                        
+                                        System.out.println("港股资产质量得分计算完成 - 两应收一预付占比: " + (adjustedReceivablesPrepaymentsRatio * 100) + "%, 商誉和无形资产占比: " + ((goodwillRatio + intangibleRatio) * 100) + "%, 存货占比: " + (inventoryRatio * 100) + "%, 资产质量得分: " + hkAssetsQuality);
+                                    } else {
+                                        stockWatchlist.setAssetsQuality(0.0);
+                                        System.err.println("港股最新报告期资产结构分析数据不完整");
+                                    }
+                                } else {
+                                    stockWatchlist.setAssetsQuality(0.0);
+                                    System.err.println("港股最新报告期资产结构分析数据不完整");
+                                }
+                            } else {
+                                stockWatchlist.setAssetsQuality(0.0);
+                                System.err.println("港股最新报告期资产结构分析数据为空");
+                            }
+                            
+                        } catch (Exception e) {
+                            stockWatchlist.setAssetsQuality(0.0);
+                            System.err.println("计算港股资产质量得分失败: " + e.getMessage());
+                        }
+                        try {
+                            double totalOperatingCashFlow = 0.0;
+                            double totalNetProfit = 0.0;
+                            int yearCount = 0;
+                            System.out.println("开始计算港股利润质量，筛选年度报表...");
+                            
+                            // 遍历数据，筛选出年度报表
+                            for (Map.Entry<String, Map<String, Object>> periodEntry : periodData.entrySet()) {
+                                if (yearCount >= 5) break; // 只取近五年
+                                
+                                String period = periodEntry.getKey();
+                                // 筛选年度报表：报告期包含"12-31"或"年"的为年度报表
+                                if (!isAnnualReport(period)) {
+                                    continue; // 跳过非年度报表
+                                }
+                                
+                                Map<String, Object> data = periodEntry.getValue();
+                                StockFinancialHkCashFlow cashFlow = (StockFinancialHkCashFlow) data.get("cashFlow");
+                                StockFinancialHkIncomeStatement incomeStatement = (StockFinancialHkIncomeStatement) data.get("incomeStatement");
+                                
+                                if (cashFlow != null && incomeStatement != null) {
+                                    // 获取经营现金流量净额
+                                    String operatingCashFlowStr = cashFlow.getNetOperatingCashFlow();
+                                    if (operatingCashFlowStr != null && !operatingCashFlowStr.trim().isEmpty()) {
+                                        try {
+                                            double operatingCashFlow = parseDoubleValue(operatingCashFlowStr);
+                                            totalOperatingCashFlow += operatingCashFlow;
+                                        } catch (Exception e) {
+                                            System.err.println("解析港股经营现金流量净额失败: " + e.getMessage());
+                                        }
+                                    }
+                                    
+                                    // 获取净利润
+                                    String netProfitStr = incomeStatement.getProfitForTheYear();
+                                    if (netProfitStr != null && !netProfitStr.trim().isEmpty()) {
+                                        try {
+                                            double netProfit = parseDoubleValue(netProfitStr);
+                                            totalNetProfit += netProfit;
+                                        } catch (Exception e) {
+                                            System.err.println("解析港股净利润失败: " + e.getMessage());
+                                        }
+                                    }
+                                    
+                                    yearCount++;
+                                }
+                            }
+                            
+                            // 计算利润质量
+                            if (totalNetProfit != 0) {
+                                double profitQuality = totalOperatingCashFlow / totalNetProfit;
+                                stockWatchlist.setProfitQuality(profitQuality);
+                            } else {
+                                stockWatchlist.setProfitQuality(0.0);
+                            }
+                            
+                            System.out.println("港股利润质量计算完成 - 经营现金流量净额总和: " + totalOperatingCashFlow + ", 净利润总和: " + totalNetProfit + ", 利润质量: " + stockWatchlist.getProfitQuality());
+                            
+                        } catch (Exception e) {
+                            stockWatchlist.setProfitQuality(0.0);
+                            System.err.println("计算港股利润质量失败: " + e.getMessage());
+                        }
+                        
+                        // 5. 市盈率得分（港股暂无市盈率TTM数据）
+                        stockWatchlist.setPeScore(0.0);
+                        
+                        // TODO: 后续业务逻辑会完善其他字段的计算
+                        
+                        // 这里只是构建对象，具体的业务逻辑后续再实现
+                        System.out.println("构建StockWatchlist对象: " + stock + " - " + stockName + ", peTtm: " + stockWatchlist.getPeTtm() + ", roe: " + stockWatchlist.getRoe() + ", profitQuality: " + stockWatchlist.getProfitQuality() + ", assetsQuality: " + stockWatchlist.getAssetsQuality() + ", peScore: " + stockWatchlist.getPeScore());
+                        
+                        // 保存StockWatchlist对象到数据库
+                        try {
+                            // 检查是否已存在
+                            StockWatchlist existingStock = stockWatchlistService.getStockByCode(stock);
+                            if (existingStock != null) {
+                                // 更新：保持原有StockType不变
+                                stockWatchlist.setStockType(existingStock.getStockType());
+                                stockWatchlist.setId(existingStock.getId());
+                                stockWatchlist.setCreatedTime(existingStock.getCreatedTime());
+                                stockWatchlist.setUpdatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                                
+                                stockWatchlistService.updateStock(stockWatchlist);
+                                System.out.println("更新StockWatchlist成功: " + stock + ", 保持原有类型: " + existingStock.getStockType());
+                            } else {
+                                // 新增：StockType设为0
+                                stockWatchlist.setStockType(0);
+                                stockWatchlist.setCreatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                                stockWatchlist.setUpdatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                                
+                                stockWatchlistService.addStock(stockWatchlist);
+                                System.out.println("新增StockWatchlist成功: " + stock + ", 类型设为: 0");
+                            }
+                        } catch (Exception e) {
+                            System.err.println("保存StockWatchlist失败: " + stock + " - " + e.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // 构建StockWatchlist失败不影响主要分析结果
+                System.err.println("构建StockWatchlist对象失败: " + e.getMessage());
+            }
+
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "分析过程中发生错误: " + e.getMessage());
@@ -931,5 +1381,29 @@ public class FinancialAnalysisService {
         }
 
         return result;
+    }
+    
+    /**
+     * 判断是否为年度报表
+     * @param period 报告期
+     * @return true为年度报表，false为季度报表
+     */
+    private boolean isAnnualReport(String period) {
+        if (period == null || period.trim().isEmpty()) {
+            return false;
+        }
+        
+        String cleanPeriod = period.trim();
+        
+        // 年度报表格式：
+        // 1. 包含"12-31"（如：2023-12-31）
+        // 2. 包含"年"（如：2023年）
+        // 3. 只包含年份（如：2023）
+        // 4. 包含"年度"（如：2023年度）
+        
+        return cleanPeriod.contains("12-31") || 
+               cleanPeriod.contains("年") || 
+               cleanPeriod.matches("^\\d{4}$") || 
+               cleanPeriod.contains("年度");
     }
 }
