@@ -40,10 +40,23 @@
     		<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
 
+		<!-- MyBatis数据库支持 -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
+			<groupId>org.mybatis.spring.boot</groupId>
+			<artifactId>mybatis-spring-boot-starter</artifactId>
+			<version>3.0.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.33</version>
+		</dependency>
+
+		<dependency>
+    		<groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-test</artifactId>
+    		<scope>test</scope>
 		</dependency>
 
 		<dependency>
@@ -71,7 +84,7 @@
 			<version>5.2.5</version>
 		</dependency>
 	
- </dependencies>
+	</dependencies>
 
 	<build>
 		<plugins>

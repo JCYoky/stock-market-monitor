@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="me.huangjiacheng.hundun.mapper.StockWatchlistMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="me.huangjiacheng.hundun.model.StockWatchlist">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="stock_code" property="stockCode" jdbcType="VARCHAR"/>
+        <result column="stock_name" property="stockName" jdbcType="VARCHAR"/>
+        <result column="stock_type" property="stockType" jdbcType="INTEGER"/>
+        <result column="created_time" property="createdTime" jdbcType="TIMESTAMP"/>
+        <result column="updated_time" property="updatedTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, stock_code, stock_name, stock_type, created_time, updated_time
+    </sql>
+    
+    <!-- 插入自选股 -->
+    <insert id="insert" parameterType="me.huangjiacheng.hundun.model.StockWatchlist">
+        INSERT INTO stock_watchlist (stock_code, stock_name, stock_type)
+        VALUES (#{stockCode}, #{stockName}, #{stockType})
+    </insert>
+    
+    <!-- 根据股票代码删除自选股 -->
+    <delete id="deleteByStockCode" parameterType="string">
+        DELETE FROM stock_watchlist WHERE stock_code = #{stockCode}
+    </delete>
+    
+    <!-- 更新自选股信息 -->
+    <update id="update" parameterType="me.huangjiacheng.hundun.model.StockWatchlist">
+        UPDATE stock_watchlist 
+        SET stock_name = #{stockName}, stock_type = #{stockType}
+        WHERE stock_code = #{stockCode}
+    </update>
+    
+    <!-- 根据股票代码查询自选股 -->
+    <select id="selectByStockCode" parameterType="string" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM stock_watchlist 
+        WHERE stock_code = #{stockCode}
+    </select>
+    
+    <!-- 查询所有自选股 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM stock_watchlist 
+        ORDER BY created_time DESC
+    </select>
+    
+    <!-- 根据股票类型查询自选股 -->
+    <select id="selectByStockType" parameterType="integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM stock_watchlist 
+        WHERE stock_type = #{stockType}
+        ORDER BY created_time DESC
+    </select>
+    
+</mapper>

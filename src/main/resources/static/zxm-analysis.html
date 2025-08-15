@@ -128,25 +128,7 @@
             margin: 0;
         }
 
-        .batch-evaluate-btn {
-            background: rgba(255, 255, 255, 0.15);
-            color: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
-            margin-left: 16px;
-        }
 
-        .batch-evaluate-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            color: white;
-            border-color: rgba(255, 255, 255, 0.3);
-        }
 
 
 
@@ -370,13 +352,7 @@
             box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
         }
 
-        #batchEvaluateBtn {
-            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        }
 
-        #batchEvaluateBtn:hover {
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
-        }
 
         .loading {
             text-align: center;
@@ -959,12 +935,98 @@
             margin-bottom: 20px;
         }
 
+        .stock-info-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
         .stock-info-header h2 {
             font-size: 1.4rem;
             font-weight: 600;
             color: #1e40af;
             margin: 0;
         }
+
+        .stock-actions {
+            display: flex;
+            gap: 12px;
+            position: absolute;
+            right: 0;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .watch-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+        }
+
+        .watch-btn:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+        }
+
+        .portfolio-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .portfolio-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+
+        .watch-badge {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        .portfolio-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+
 
         .stock-info-grid {
             display: grid;
@@ -1154,7 +1216,7 @@
                     <span class="logo-icon">📊</span>
                 </div>
                 <h1>智能财务分析系统</h1>
-                <button onclick="triggerBatchEvaluation()" id="batchEvaluateBtn" class="batch-evaluate-btn">批量评分</button>
+
             </div>
         </div>
 
@@ -1267,6 +1329,14 @@
             <div class="stock-info-content">
                 <div class="stock-info-header">
                     <h2 id="stockInfoTitle">股票基本信息</h2>
+                    <div class="stock-actions">
+                        <button id="addToWatchlistBtn" class="action-btn watch-btn" onclick="addToWatchlist(1)">
+                            加观察
+                        </button>
+                        <button id="addToPortfolioBtn" class="action-btn portfolio-btn" onclick="addToWatchlist(2)">
+                            设为持仓股
+                        </button>
+                    </div>
                 </div>
                 <div class="stock-info-grid">
                     <!-- 基本信息组 -->
@@ -1348,7 +1418,6 @@
             document.getElementById('welcomeSection').style.display = 'none';
             document.getElementById('analyzeBtn').disabled = true;
             document.getElementById('flipStoneBtn').disabled = true;
-            document.getElementById('batchEvaluateBtn').disabled = true;
 
             // 重置加载步骤
             resetLoadingSteps();
@@ -1397,21 +1466,12 @@
                     completeLoading();
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;
-                    document.getElementById('batchEvaluateBtn').disabled = false;
                     showError('翻石头失败，请稍后重试');
                     document.getElementById('welcomeSection').style.display = 'block';
                 });
         }
 
-        function triggerBatchEvaluation() {
-            // 调用批量评估API
-            fetch('http://localhost:8888/api/batch/evaluate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-        }
+
 
         function analyzeStock(retryCount = 0) {
             // 隐藏搜索建议框
@@ -1446,7 +1506,6 @@
             document.getElementById('welcomeSection').style.display = 'none';
             document.getElementById('analyzeBtn').disabled = true;
             document.getElementById('flipStoneBtn').disabled = true;
-            document.getElementById('batchEvaluateBtn').disabled = true;
 
             // 重置加载步骤
             resetLoadingSteps();
@@ -1464,6 +1523,10 @@
         }
 
         function analyzeHkStock(stock) {
+            // 设置全局股票代码，供自选股功能使用
+            window.currentStockCode = stock;
+            console.log('analyzeHkStock: 设置全局股票代码:', stock);
+            
             // 并行获取港股财务分析数据、基本信息和换手率分布数据
             Promise.allSettled([
                 fetch(`http://localhost:8888/api/zxm/hk-financial-analysis?stock=${encodeURIComponent(stock)}`),
@@ -1476,12 +1539,11 @@
                     completeLoading();
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;
-                    document.getElementById('batchEvaluateBtn').disabled = false;
 
                     // 处理基本信息结果
                     if (basicInfoResult.status === 'fulfilled' && basicInfoResult.value.ok) {
                         basicInfoResult.value.json().then(hkBasicInfo => {
-                            displayHkBasicInfo(hkBasicInfo);
+                            displayHkBasicInfo(hkBasicInfo, stock);
                         }).catch(error => {
                             console.warn('港股基本信息解析失败:', error);
                             // 基本信息失败不影响图表显示
@@ -1532,13 +1594,15 @@
                     completeLoading();
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;
-                    document.getElementById('batchEvaluateBtn').disabled = false;
                     showError('港股数据获取失败，请稍后重试');
                     document.getElementById('welcomeSection').style.display = 'block';
                 });
         }
 
         function analyzeAShareStock(symbol) {
+            // 设置全局股票代码，供自选股功能使用
+            window.currentStockCode = symbol;
+            
             // 并行获取股票基本信息、财务分析数据、市盈率数据、换手率分布数据和股东户数数据
             Promise.all([
                 fetch(`http://localhost:8888/api/zxm/stock-info?symbol=${encodeURIComponent(symbol)}`),
@@ -1559,7 +1623,6 @@
                     completeLoading();
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;
-                    document.getElementById('batchEvaluateBtn').disabled = false;
 
                     // 显示股票基本信息
                     displayStockInfo(stockInfo);
@@ -1604,13 +1667,15 @@
                     completeLoading();
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;
-                    document.getElementById('batchEvaluateBtn').disabled = false;
                     showError('数据获取失败，请稍后重试');
                     document.getElementById('welcomeSection').style.display = 'block';
                 });
         }
 
         function displayStockInfo(stockInfo) {
+            // 设置全局股票代码，供自选股功能使用
+            window.currentStockCode = stockInfo.code;
+            
             // 更新股票信息标题
             document.getElementById('stockInfoTitle').textContent = `${stockInfo.name || stockInfo.code} - 基本信息`;
 
@@ -1629,6 +1694,9 @@
 
             // 显示股票信息区域
             document.getElementById('stockInfoSection').style.display = 'block';
+            
+            // 检查是否为自选股
+            checkWatchlistStatus(stockInfo.code);
         }
 
         function displayHkStockInfo(analysisData) {
@@ -2711,6 +2779,262 @@
             }, 3000);
         }
 
+        // 检查自选股状态
+        function checkWatchlistStatus(stockCode) {
+            if (!stockCode || stockCode === '-') return;
+            
+            fetch(`/api/watchlist/stock/${stockCode}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 404) {
+                        // 股票不在自选股中，这是正常情况
+                        console.log(`股票 ${stockCode} 不在自选股中`);
+                        updateWatchlistButtons(null);
+                        return null;
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                })
+                .then(data => {
+                    if (data) {
+                        updateWatchlistButtons(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('检查自选股状态时发生错误:', error);
+                    updateWatchlistButtons(null);
+                });
+        }
+        
+        // 更新自选股按钮状态
+        function updateWatchlistButtons(watchlistData) {
+            const watchBtn = document.getElementById('addToWatchlistBtn');
+            const portfolioBtn = document.getElementById('addToPortfolioBtn');
+            const stockNameElement = document.getElementById('stockName');
+            const stockInfoTitle = document.getElementById('stockInfoTitle');
+            
+            // 获取原始股票名称（不包含标记）
+            let originalStockName = '';
+            if (stockNameElement) {
+                // A股页面有stockName元素
+                originalStockName = stockNameElement.textContent.replace(/[观持]/g, '').trim();
+            } else if (stockInfoTitle) {
+                // 港股页面没有stockName元素，从标题中提取
+                originalStockName = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+            }
+            
+            if (watchlistData) {
+                // 股票已在自选股中
+                const stockType = watchlistData.stockType;
+                const stockName = stockNameElement ? stockNameElement.textContent : '';
+                
+                if (stockType === 1) {
+                    // 观察股 - 在标题左侧显示标记
+                    if (stockInfoTitle && stockInfoTitle.textContent) {
+                        // 先清理标题中的原有标记，然后添加新标记
+                        const cleanTitle = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+                        stockInfoTitle.innerHTML = `<span class="watch-badge">观</span> ${cleanTitle}`;
+                    }
+                    // 为港股页面添加标记到公司名称标题
+                    const companyTitle = document.querySelector('.stock-info-header h2');
+                    if (companyTitle && !companyTitle.innerHTML.includes('观')) {
+                        const cleanCompanyTitle = companyTitle.textContent.replace(/[观持]/g, '').trim();
+                        companyTitle.innerHTML = `<span class="watch-badge">观</span> ${cleanCompanyTitle}`;
+                    }
+                    watchBtn.style.display = 'none';
+                    portfolioBtn.textContent = '设为持仓股';
+                    portfolioBtn.onclick = () => addToWatchlist(2);
+                    portfolioBtn.style.display = 'inline-block';
+                } else if (stockType === 2) {
+                    // 持仓股 - 在标题左侧显示标记
+                    if (stockInfoTitle && stockInfoTitle.textContent) {
+                        // 先清理标题中的原有标记，然后添加新标记
+                        const cleanTitle = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+                        stockInfoTitle.innerHTML = `<span class="portfolio-badge">持</span> ${cleanTitle}`;
+                    }
+                    // 为港股页面添加标记到公司名称标题
+                    const companyTitle = document.querySelector('.stock-info-header h2');
+                    if (companyTitle && !companyTitle.innerHTML.includes('持')) {
+                        const cleanCompanyTitle = companyTitle.textContent.replace(/[观持]/g, '').trim();
+                        companyTitle.innerHTML = `<span class="portfolio-badge">持</span> ${cleanCompanyTitle}`;
+                    }
+                    portfolioBtn.style.display = 'none';
+                    watchBtn.textContent = '设为观察股';
+                    watchBtn.onclick = () => addToWatchlist(1);
+                    watchBtn.style.display = 'inline-block';
+                }
+                
+                // 添加删除按钮
+                addDeleteButton();
+            } else {
+                // 股票不在自选股中，显示默认按钮
+                // 移除标题中的标记
+                if (stockInfoTitle) {
+                    stockInfoTitle.innerHTML = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+                }
+                // 为港股页面移除公司名称标题中的标记
+                const companyTitle = document.querySelector('.stock-info-header h2');
+                if (companyTitle) {
+                    companyTitle.innerHTML = companyTitle.textContent.replace(/[观持]/g, '').trim();
+                }
+                watchBtn.textContent = '加观察';
+                watchBtn.onclick = () => addToWatchlist(1);
+                watchBtn.style.display = 'inline-block';
+                portfolioBtn.textContent = '设为持仓股';
+                portfolioBtn.onclick = () => addToWatchlist(2);
+                portfolioBtn.style.display = 'inline-block';
+                
+                // 移除删除按钮
+                removeDeleteButton();
+            }
+        }
+        
+        // 添加删除按钮
+        function addDeleteButton() {
+            if (document.getElementById('deleteWatchlistBtn')) return;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.id = 'deleteWatchlistBtn';
+            deleteBtn.className = 'action-btn delete-btn';
+            deleteBtn.textContent = '删除';
+            deleteBtn.onclick = deleteFromWatchlist;
+            
+            const actionsDiv = document.querySelector('.stock-actions');
+            actionsDiv.appendChild(deleteBtn);
+        }
+        
+        // 移除删除按钮
+        function removeDeleteButton() {
+            const deleteBtn = document.getElementById('deleteWatchlistBtn');
+            if (deleteBtn) {
+                deleteBtn.remove();
+            }
+        }
+        
+        // 删除自选股
+        function deleteFromWatchlist() {
+            let stockCode = '';
+            
+            // 首先尝试从DOM元素获取股票代码
+            const stockCodeElement = document.getElementById('stockCode');
+            if (stockCodeElement && stockCodeElement.textContent && stockCodeElement.textContent !== '-') {
+                stockCode = stockCodeElement.textContent;
+            } else if (window.currentStockCode) {
+                // 如果DOM元素获取不到，从全局变量获取
+                stockCode = window.currentStockCode;
+            }
+            
+            if (!stockCode) {
+                showError('无法获取股票代码，删除失败');
+                return;
+            }
+            
+            if (confirm('确定要从自选股中删除这只股票吗？')) {
+                fetch(`/api/watchlist/delete/${stockCode}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccess('已从自选股中删除');
+                        // 重新检查状态
+                        checkWatchlistStatus(stockCode);
+                    } else {
+                        showError('删除失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('删除自选股失败:', error);
+                    showError('删除失败，请稍后重试');
+                });
+            }
+        }
+
+        // 添加自选股功能
+        function addToWatchlist(stockType) {
+            let stockCode = '';
+            let stockName = '';
+            
+            // 获取股票代码，兼容A股和港股页面
+            const stockCodeElement = document.getElementById('stockCode');
+            if (stockCodeElement) {
+                stockCode = stockCodeElement.textContent;
+            }
+            
+            // 如果从DOM元素获取不到股票代码，尝试从全局变量获取
+            if (!stockCode || stockCode === '-') {
+                // 检查是否有全局存储的当前股票代码
+                console.log('DOM元素获取不到股票代码，检查全局变量:', window.currentStockCode);
+                if (window.currentStockCode) {
+                    stockCode = window.currentStockCode;
+                    console.log('从全局变量获取到股票代码:', stockCode);
+                }
+            }
+            
+            console.log('最终获取的股票代码:', stockCode);
+            console.log('最终获取的股票名称:', stockName);
+            
+            // 获取股票名称，兼容A股和港股页面
+            const stockNameElement = document.getElementById('stockName');
+            const stockInfoTitle = document.getElementById('stockInfoTitle');
+            
+            if (stockNameElement && stockNameElement.textContent && stockNameElement.textContent !== '-') {
+                // A股页面有stockName元素
+                stockName = stockNameElement.textContent;
+            } else if (stockInfoTitle && stockInfoTitle.textContent) {
+                // 港股页面没有stockName元素，从标题中提取
+                stockName = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+            }
+            
+            // 如果还是获取不到股票名称，尝试从页面其他元素获取
+            if (!stockName || stockName === '-') {
+                // 尝试从港股页面的公司名称元素获取
+                const companyNameElement = document.querySelector('.stock-info-header h2');
+                if (companyNameElement && companyNameElement.textContent) {
+                    stockName = companyNameElement.textContent.split('（')[0]; // 取中文名称部分
+                }
+            }
+            
+            if (!stockCode || stockCode === '-' || !stockName || stockName === '-') {
+                showError('股票信息不完整，无法添加到自选股');
+                return;
+            }
+
+            const stockData = {
+                stockCode: stockCode,
+                stockName: stockName,
+                stockType: stockType
+            };
+
+            console.log('发送的数据:', stockData);
+
+            const typeText = stockType === 1 ? '观察股' : '持仓股';
+            
+            // 调用后端API添加自选股
+            fetch('/api/watchlist/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(stockData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(`已成功${data.message.includes('更新') ? '更新' : '添加'}为${typeText}`);
+                    // 重新检查状态
+                    checkWatchlistStatus(stockCode);
+                } else {
+                    showError('操作失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('添加自选股失败:', error);
+                showError('添加自选股失败，请稍后重试');
+            });
+        }
+
         // 全局tooltip修复函数
         function fixTooltipZIndex() {
             const tooltips = document.querySelectorAll('.echarts-tooltip');
@@ -3725,9 +4049,33 @@
         }
 
         // 展示港股所有基本信息字段
-        function displayHkBasicInfo(info) {
+        function displayHkBasicInfo(info, stockCode) {
+            // 设置全局股票代码，供自选股功能使用
+            window.currentStockCode = stockCode;
+            
             const section = document.getElementById('stockInfoSection');
-            let html = `<div class="stock-info-header"><h2>${info.comcnname || ''}（${info.comenname || ''}）</h2></div>`;
+            let html = `<div class="stock-info-header">
+                <h2>${info.comcnname || ''}（${info.comenname || ''}）</h2>
+                <div class="stock-actions">
+                    <button id="addToWatchlistBtn" class="action-btn watch-btn" onclick="addToWatchlist(1)">
+                        加观察
+                    </button>
+                    <button id="addToPortfolioBtn" class="action-btn portfolio-btn" onclick="addToWatchlist(2)">
+                        设为持仓股
+                    </button>
+                </div>
+            </div>`;
+            
+            // 确保港股页面有stockInfoTitle元素，用于自选股功能
+            let stockInfoTitle = document.getElementById('stockInfoTitle');
+            if (!stockInfoTitle) {
+                // 如果元素不存在，创建一个
+                stockInfoTitle = document.createElement('h2');
+                stockInfoTitle.id = 'stockInfoTitle';
+                stockInfoTitle.style.display = 'none'; // 隐藏这个元素，因为港股页面不需要显示它
+                section.appendChild(stockInfoTitle);
+            }
+            stockInfoTitle.textContent = `${info.comcnname || info.comenname || stockCode} - 港股基本信息`;
             html += '<div class="stock-info-grid">';
 
             // 基本信息组 - 整合公司名称和行业
@@ -3794,6 +4142,24 @@
             
             section.innerHTML = html;
             section.style.display = 'block';
+            
+            // 为港股设置股票代码和名称，使按钮能正常工作
+            // 港股代码通常是5位数字
+            const stockCodeElement = document.getElementById('stockCode');
+            if (stockCodeElement) {
+                stockCodeElement.textContent = stockCode || '-';
+            }
+            
+            // 港股名称使用中文名称
+            const stockNameElement = document.getElementById('stockName');
+            if (stockNameElement) {
+                stockNameElement.textContent = info.comcnname || info.comenname || '-';
+            }
+            
+            // 确保元素内容设置完成后再检查自选股状态
+            setTimeout(() => {
+                checkWatchlistStatus(stockCode);
+            }, 100);
         }
 
         function formatDateFromTimestamp(ts) {
