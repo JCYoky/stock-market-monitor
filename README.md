@@ -29,9 +29,11 @@
 - **智能排序**: 按市盈率得分排序，优先显示高价值股票
 
 ### 📈 市危率分析
-- **风险指标**: 市危率数据管理和分析
-- **历史追踪**: 支持市危率历史数据查询
-- **数据可视化**: 市危率趋势图表展示
+- **当日计算**: 实时计算A股市场当日市危率（市盈率中位数）
+- **历史追踪**: 支持市危率历史数据查询和趋势分析
+- **数据可视化**: 基于ECharts的市危率趋势柱状图
+- **风险监控**: 监控市场整体估值水平变化
+- **数据导出**: 支持市危率历史数据导出为SQL文件
 
 ## 🛠️ 技术栈
 
@@ -94,9 +96,23 @@ CREATE TABLE `stock_watchlist` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stock_code` (`stock_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='自选股表';
+
+-- 市危率表
+CREATE TABLE `market_risk_ratio` (
+  `date` varchar(10) NOT NULL COMMENT '日期（主键，YYYY-MM-DD格式）',
+  `market_risk_ratio` decimal(10,4) DEFAULT '0.0000' COMMENT '市危率',
+  PRIMARY KEY (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='市危率表';
 ```
 
 ### 3. 配置数据库连接
+
+### 4. 导入市危率历史数据（可选）
+```sql
+-- 使用提供的SQL文件导入市危率历史数据
+-- 文件: market_risk_ratio_export.sql
+-- 包含表结构和历史数据，可直接执行
+```
 
 编辑 `src/main/resources/application.properties`:
 ```properties
@@ -261,6 +277,11 @@ akshare.timeout=30000
 - `GET /api/watchlist/all` - 获取所有自选股
 - `GET /api/watchlist/stock/{stockCode}` - 查询特定股票
 
+### 市危率管理
+- `POST /api/zxm/market-risk-ratio-today` - 计算当日市危率
+- `GET /api/zxm/market-risk-ratio/all` - 获取所有市危率数据
+- `POST /api/zxm/calculate-market-risk-ratio` - 计算历史市危率（已废弃）
+
 ### 批量分析
 - `POST /api/public/batch_analysis` - 批量财务分析
 
@@ -290,6 +311,15 @@ akshare.timeout=30000
 5. 创建 Pull Request
 
 ## 📝 更新日志
+
+### v1.2.0 (2025-01-27)
+- ✨ 新增市危率功能
+- 📊 实现当日市危率计算（A股市盈率中位数）
+- 🎯 改版欢迎页面为市危率趋势展示
+- 📈 集成ECharts柱状图展示市危率变化
+- 💾 支持市危率历史数据导出为SQL文件
+- 🔄 优化前端交互体验，去掉冗余图标
+- 🎨 美化市危率展示界面
 
 ### v1.1.0 (2024-12-19)
 - ✨ 新增自选股管理功能
