@@ -1538,10 +1538,32 @@ public class FinancialAnalysisService {
      * 对于每一支A股股票，获取其历史市盈率数据，整合全部股票在每个日期的市盈率，
      * 排序后取中位数作为市危率，存入数据库
      */
-    @Deprecated
+    /**
+     * 计算并保存市危率数据（从数据库最新日期开始计算）
+     */
     public void calculateAndSaveMarketRiskRatio() {
         try {
             System.out.println("开始计算市危率...");
+            
+            // 获取数据库中最新的市危率数据日期
+            String latestDate = getLatestMarketRiskRatioDate();
+            if (latestDate == null) {
+                System.out.println("数据库中暂无市危率数据，将从2010-01-01开始计算");
+                latestDate = "2010-01-01";
+            } else {
+                System.out.println("数据库中最新的市危率数据日期: " + latestDate);
+                
+                // 检查最新日期是否已经是今天
+                String today = getTodayDate();
+                if (latestDate.equals(today)) {
+                    System.out.println("最新数据日期已经是今天(" + today + ")，无需重复计算");
+                    return;
+                }
+                
+                // 计算下一个日期
+                latestDate = getNextDate(latestDate);
+                System.out.println("将从 " + latestDate + " 开始计算新的市危率数据");
+            }
             
             // 获取所有A股股票列表
             List<StockInfo> stockList = akShareService.getStockList();
@@ -1572,8 +1594,8 @@ public class FinancialAnalysisService {
                             if (valuation.getDate() != null && valuation.getValue() != null && !valuation.getValue().trim().isEmpty()) {
                                 String date = valuation.getDate();
                                 
-                                // 检查日期是否在2010年1月1日之后
-                                if (isDateAfter2010(date)) {
+                                // 检查日期是否在最新日期之后
+                                if (isDateAfterOrEqual(date, latestDate)) {
                                     try {
                                         double peValue = Double.parseDouble(valuation.getValue());
                                         // 负数视为正无穷
@@ -1698,32 +1720,6 @@ public class FinancialAnalysisService {
     }
     
     /**
-     * 检查日期是否在2010年1月1日之后
-     */
-    private boolean isDateAfter2010(String dateStr) {
-        try {
-            if (dateStr == null || dateStr.trim().isEmpty()) {
-                return false;
-            }
-            
-            // 先标准化日期格式
-            String normalizedDate = normalizeDate(dateStr);
-            if (normalizedDate == null) {
-                return false;
-            }
-            
-            // 检查年份是否在2010年之后
-            String[] parts = normalizedDate.split("-");
-            int year = Integer.parseInt(parts[0]);
-            return year >= 2010;
-            
-        } catch (Exception e) {
-            System.err.println("解析日期 " + dateStr + " 时发生错误: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
      * 保存市危率数据到数据库
      */
     private void saveMarketRiskRatiosToDatabase(List<MarketRiskRatio> marketRiskRatios) {
@@ -1769,163 +1765,86 @@ public class FinancialAnalysisService {
             e.printStackTrace();
         }
     }
-    
+
     /**
-     * 计算当日市危率并保存
-     * 获取所有A股股票当日的市盈率数据，计算出中位数作为市危率，构建市危率并保存
+     * 获取数据库中最新的市危率数据日期
      */
-    public void marketRiskRatioToDate() {
+    private String getLatestMarketRiskRatioDate() {
         try {
-            System.out.println("开始计算当日市危率...");
-            
-            // 获取当前日期（YYYY-MM-DD格式）
-            String today = java.time.LocalDate.now().toString();
-            System.out.println("计算日期: " + today);
-            
-            // 获取所有A股股票列表
-            List<StockInfo> stockList = akShareService.getStockList();
-            if (stockList == null || stockList.isEmpty()) {
-                System.err.println("获取A股股票列表失败");
-                return;
+            List<MarketRiskRatio> allRatios = marketRiskRatioMapper.selectAll();
+            if (allRatios == null || allRatios.isEmpty()) {
+                return null;
             }
             
-            System.out.println("获取到 " + stockList.size() + " 只A股股票");
-            
-            // 用于存储当日所有股票的市盈率数据
-            List<Double> todayPeValues = new ArrayList<>();
-            
-            // 遍历每只股票，获取其当日市盈率数据
-            int processedCount = 0;
-            int validPeCount = 0;
-            
-            for (StockInfo stock : stockList) {
-                try {
-                    String stockCode = stock.getCode();
-                    if (stockCode == null || stockCode.trim().isEmpty()) {
-                        continue;
-                    }
-                    
-                    // 获取该股票当日的市盈率数据
-                    List<StockValuationData> valuationDataList = akShareService.getStockValuationData(stockCode);
-                    if (valuationDataList != null && !valuationDataList.isEmpty()) {
-                        // 查找当日或最近的市盈率数据
-                        StockValuationData todayValuation = null;
-                        
-                        for (StockValuationData valuation : valuationDataList) {
-                            if (valuation.getDate() != null) {
-                                String valuationDate = normalizeDate(valuation.getDate());
-                                if (valuationDate != null && valuationDate.equals(today)) {
-                                    todayValuation = valuation;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // 如果没找到当日数据，尝试获取最近的数据
-                        if (todayValuation == null && !valuationDataList.isEmpty()) {
-                            todayValuation = valuationDataList.get(valuationDataList.size() - 1);
-                        }
-                        
-                        // 处理市盈率数据
-                        if (todayValuation != null && todayValuation.getValue() != null && !todayValuation.getValue().trim().isEmpty()) {
-                            try {
-                                double peValue = Double.parseDouble(todayValuation.getValue());
-                                // 负数视为正无穷
-                                double processedPeValue = peValue < 0 ? Double.POSITIVE_INFINITY : peValue;
-                                
-                                todayPeValues.add(processedPeValue);
-                                validPeCount++;
-                                
-                            } catch (NumberFormatException e) {
-                                // 忽略无法解析的数据
-                                continue;
-                            }
-                        }
-                    }
-                    
-                    processedCount++;
-                    if (processedCount % 100 == 0) {
-                        System.out.println("已处理 " + processedCount + " 只股票，有效市盈率数据: " + validPeCount + " 条");
-                    }
-                    
-                } catch (Exception e) {
-                    System.err.println("处理股票 " + stock.getCode() + " 时发生错误: " + e.getMessage());
-                    continue;
-                }
-            }
-            
-            System.out.println("市盈率数据收集完成，共处理 " + processedCount + " 只股票，有效数据: " + validPeCount + " 条");
-            
-            if (todayPeValues.isEmpty()) {
-                System.err.println("未收集到有效的市盈率数据，无法计算市危率");
-                return;
-            }
-            
-            // 计算当日市危率（中位数）
-            Collections.sort(todayPeValues);
-            double medianPe;
-            int size = todayPeValues.size();
-            
-            if (size % 2 == 0) {
-                // 偶数个数据，取中间两个数的平均值
-                medianPe = (todayPeValues.get(size / 2 - 1) + todayPeValues.get(size / 2)) / 2.0;
-            } else {
-                // 奇数个数据，取中间的数
-                medianPe = todayPeValues.get(size / 2);
-            }
-            
-            // 保留两位小数
-            double roundedMedianPe = Math.round(medianPe * 100.0) / 100.0;
-            
-            System.out.println("当日市危率计算完成 - 数据总数: " + size + ", 中位数: " + roundedMedianPe);
-            
-            // 创建市危率模型
-            MarketRiskRatio marketRiskRatio = new MarketRiskRatio();
-            marketRiskRatio.setDate(today);
-            marketRiskRatio.setMarketRiskRatio(roundedMedianPe);
-            
-            // 保存到数据库
-            saveSingleMarketRiskRatio(marketRiskRatio);
-            
-            System.out.println("当日市危率计算和保存完成！");
+            // 按日期排序，获取最新日期
+            allRatios.sort((a, b) -> b.getDate().compareTo(a.getDate()));
+            return allRatios.get(0).getDate();
             
         } catch (Exception e) {
-            System.err.println("计算当日市危率时发生错误: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("获取最新市危率日期时发生错误: " + e.getMessage());
+            return null;
         }
     }
-    
+
     /**
-     * 保存单个市危率数据到数据库
+     * 计算给定日期的下一个日期
      */
-    private void saveSingleMarketRiskRatio(MarketRiskRatio marketRiskRatio) {
+    private String getNextDate(String dateStr) {
         try {
-            // 检查该日期是否已存在数据
-            MarketRiskRatio existingRatio = marketRiskRatioMapper.selectByDate(marketRiskRatio.getDate());
-            
-            if (existingRatio != null) {
-                // 如果存在，则更新
-                int updateResult = marketRiskRatioMapper.updateByDate(marketRiskRatio);
-                if (updateResult > 0) {
-                    System.out.println("更新当日市危率数据 - 日期: " + marketRiskRatio.getDate() + 
-                                     ", 市危率: " + marketRiskRatio.getMarketRiskRatio());
-                } else {
-                    System.err.println("更新当日市危率数据失败");
-                }
-            } else {
-                // 如果不存在，则插入
-                int insertResult = marketRiskRatioMapper.insert(marketRiskRatio);
-                if (insertResult > 0) {
-                    System.out.println("插入当日市危率数据 - 日期: " + marketRiskRatio.getDate() + 
-                                     ", 市危率: " + marketRiskRatio.getMarketRiskRatio());
-                } else {
-                    System.err.println("插入当日市危率数据失败");
-                }
+            if (dateStr == null || dateStr.trim().isEmpty()) {
+                return "2010-01-01";
             }
             
+            // 解析日期
+            java.time.LocalDate date = java.time.LocalDate.parse(dateStr);
+            // 计算下一个日期
+            java.time.LocalDate nextDate = date.plusDays(1);
+            return nextDate.toString();
+            
         } catch (Exception e) {
-            System.err.println("保存当日市危率数据时发生错误: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("计算下一个日期时发生错误: " + e.getMessage());
+            return "2010-01-01";
+        }
+    }
+
+    /**
+     * 检查日期是否在指定日期之后或等于
+     */
+    private boolean isDateAfterOrEqual(String dateStr, String targetDateStr) {
+        try {
+            if (dateStr == null || targetDateStr == null) {
+                return false;
+            }
+            
+            String normalizedDate = normalizeDate(dateStr);
+            String normalizedTargetDate = normalizeDate(targetDateStr);
+            
+            if (normalizedDate == null || normalizedTargetDate == null) {
+                return false;
+            }
+            
+            java.time.LocalDate date = java.time.LocalDate.parse(normalizedDate);
+            java.time.LocalDate targetDate = java.time.LocalDate.parse(normalizedTargetDate);
+            
+            return !date.isBefore(targetDate); // 大于等于目标日期
+            
+        } catch (Exception e) {
+            System.err.println("比较日期时发生错误: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 获取今天的日期字符串（YYYY-MM-DD格式）
+     */
+    private String getTodayDate() {
+        try {
+            java.time.LocalDate today = java.time.LocalDate.now();
+            return today.toString();
+        } catch (Exception e) {
+            System.err.println("获取今天日期时发生错误: " + e.getMessage());
+            // 如果出错，返回一个默认日期
+            return "2010-01-01";
         }
     }
 }

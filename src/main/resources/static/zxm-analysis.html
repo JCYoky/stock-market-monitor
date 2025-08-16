@@ -1580,7 +1580,7 @@
                     自选股
                 </button>
                 <button class="nav-button market-risk-btn" onclick="updateMarketRiskRatio()">
-                    计算当日市危率
+                    更新市危率
                 </button>
             </div>
         </div>
@@ -5195,7 +5195,7 @@
         // 自选股相关函数
         
         /**
-         * 计算当日市危率
+         * 更新市危率数据
          */
         function updateMarketRiskRatio() {
             // 显示按钮加载状态
@@ -5208,7 +5208,7 @@
             marketRiskBtn.innerHTML = '计算中...';
             
             // 调用后端API
-            fetch('/api/zxm/market-risk-ratio-today', {
+            fetch('/api/zxm/calculate-market-risk-ratio', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -5217,14 +5217,14 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showSuccess('当日市危率计算已启动，请查看后台日志');
+                    showSuccess('市危率计算已启动，请查看后台日志');
                 } else {
-                    showError('启动当日市危率计算失败: ' + (data.message || '未知错误'));
+                    showError('启动市危率计算失败: ' + (data.message || '未知错误'));
                 }
             })
             .catch(error => {
-                console.error('计算当日市危率失败:', error);
-                showError('计算当日市危率失败: ' + error.message);
+                console.error('计算市危率失败:', error);
+                showError('计算市危率失败: ' + error.message);
             })
             .finally(() => {
                 // 恢复按钮状态

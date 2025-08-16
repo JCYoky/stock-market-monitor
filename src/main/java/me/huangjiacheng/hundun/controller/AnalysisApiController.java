@@ -308,7 +308,7 @@ public class AnalysisApiController {
     }
     
     /**
-     * 计算并保存市危率数据
+     * 计算并保存市危率数据（从数据库最新日期开始计算）
      * @return 计算结果
      */
     @PostMapping("/calculate-market-risk-ratio")
@@ -333,37 +333,6 @@ public class AnalysisApiController {
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "启动市危率计算失败: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(result);
-    }
-    
-    /**
-     * 计算当日市危率
-     * @return 计算结果
-     */
-    @PostMapping("/market-risk-ratio-today")
-    public ResponseEntity<Map<String, Object>> calculateTodayMarketRiskRatio() {
-        Map<String, Object> result = new HashMap<>();
-        
-        try {
-            System.out.println("开始调用当日市危率计算接口...");
-            
-            // 在后台线程中执行计算，避免阻塞
-            new Thread(() -> {
-                try {
-                    zxmFinancialAnalysisService.marketRiskRatioToDate();
-                } catch (Exception e) {
-                    System.err.println("后台计算当日市危率时发生错误: " + e.getMessage());
-                }
-            }).start();
-            
-            result.put("success", true);
-            result.put("message", "当日市危率计算已启动，请查看后台日志");
-            
-        } catch (Exception e) {
-            result.put("success", false);
-            result.put("message", "启动当日市危率计算失败: " + e.getMessage());
         }
         
         return ResponseEntity.ok(result);

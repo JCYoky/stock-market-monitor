@@ -280,7 +280,7 @@ akshare.timeout=30000
 ### 市危率管理
 - `POST /api/zxm/market-risk-ratio-today` - 计算当日市危率
 - `GET /api/zxm/market-risk-ratio/all` - 获取所有市危率数据
-- `POST /api/zxm/calculate-market-risk-ratio` - 计算历史市危率（已废弃）
+- `POST /api/zxm/calculate-market-risk-ratio` - 计算历史市危率（从数据库最新日期开始计算）
 
 ### 批量分析
 - `POST /api/public/batch_analysis` - 批量财务分析
