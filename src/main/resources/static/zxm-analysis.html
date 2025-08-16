@@ -347,14 +347,14 @@
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 4px 8px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             transition: all 0.2s ease;
             box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
-            min-width: 80px;
+            min-width: 60px;
         }
 
         .detail-btn:hover {
@@ -372,15 +372,15 @@
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 4px 8px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             transition: all 0.2s ease;
             box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
-            min-width: 80px;
-            margin-left: 8px;
+            min-width: 60px;
+            margin-left: 4px;
         }
 
         .remove-btn:hover {
@@ -392,6 +392,17 @@
         .remove-btn:active {
             transform: translateY(0);
             box-shadow: 0 1px 2px rgba(239, 68, 68, 0.3);
+        }
+
+        /* 操作列样式优化 */
+        .watchlist-table td:last-child {
+            text-align: center;
+            padding: 8px 4px;
+        }
+
+        .watchlist-table th:last-child {
+            text-align: center;
+            padding: 8px 4px;
         }
 
 
@@ -1613,7 +1624,7 @@
                             <th>利润质量</th>
                             <th>资产质量得分</th>
                             <th>市盈率得分</th>
-                            <th>操作</th>
+                            <th style="width: 140px;">操作</th>
                         </tr>
                     </thead>
                     <tbody id="watchlistTableBody">
@@ -5646,6 +5657,8 @@
      */
     function removeFromWatchlist(stockCode, stockName) {
         if (confirm(`确定要从自选股中移除 ${stockName}(${stockCode}) 吗？`)) {
+            console.log('开始移除自选股:', stockCode, stockName);
+            
             // 调用后端API将股票类型改为0
             fetch(`/api/watchlist/remove-from-watchlist/${stockCode}`, {
                 method: 'PUT',
@@ -5653,8 +5666,12 @@
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('API响应状态:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('API响应数据:', data);
                 if (data.success) {
                     showSuccess('已从自选股中移除');
                     // 立即从表格中移除该行
