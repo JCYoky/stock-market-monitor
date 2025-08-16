@@ -189,6 +189,21 @@
         .nav-button:hover .nav-icon {
             transform: scale(1.1) rotate(5deg);
         }
+        
+        /* 更新市危率按钮特殊样式 */
+        .market-risk-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .market-risk-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.6);
+        }
+        
+        .market-risk-btn:active {
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
 
         /* 自选股表格样式 */
         .watchlist-section {
@@ -1412,11 +1427,92 @@
                 padding: 10px 16px;
             }
             
-            .company-intro-content {
-                padding: 16px;
-                font-size: 0.9rem;
+                    .company-intro-content {
+            padding: 16px;
+            font-size: 0.9rem;
+        }
+        
+        /* 市危率展示区域样式 */
+        .market-risk-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
+            animation: fadeInUp 0.6s ease-out 0.6s both;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .section-header h2 {
+            font-size: 1.75rem;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .section-header p {
+            color: #64748b;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        
+        .chart-container {
+            margin-bottom: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8fafc;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .update-time {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .update-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .update-value {
+            font-size: 0.875rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+        
+
+        
+
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .market-risk-section {
+                padding: 20px;
+                margin: 0 16px;
             }
         }
+    }
 
 
 
@@ -1444,10 +1540,10 @@
             </div>
             <div class="nav-section">
                 <button class="nav-button" onclick="showWatchlist()">
-                    <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
-                    </svg>
                     自选股
+                </button>
+                <button class="nav-button market-risk-btn" onclick="updateMarketRiskRatio()">
+                    计算当日市危率
                 </button>
             </div>
         </div>
@@ -1501,51 +1597,22 @@
             </div>
         </div>
 
-        <!-- 欢迎区域 -->
+        <!-- 市危率展示区域 -->
         <div id="welcomeSection" class="welcome-section">
-            <div class="welcome-content">
-                <div class="hero-section">
-                    <div class="hero-icon">📊</div>
-                    <h1 class="hero-title">智能财务分析系统</h1>
-                    <p class="hero-subtitle">基于张新民教授结构性财务分析理论，全面分析A股和港股上市公司财务状况，提供ROE、PE、资产负债结构、盈利能力等多维度分析</p>
+            <div class="market-risk-section">
+                <div class="section-header">
+                    <h2>市场风险指标 - 市危率趋势</h2>
+                    <p>展示A股市场整体市盈率中位数变化趋势，反映市场估值水平</p>
                 </div>
-
-                <div class="stats-section">
-                    <div class="stat-item">
-                        <div class="stat-number">2</div>
-                        <div class="stat-label">市场覆盖</div>
+                
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="update-time">
+                            <span class="update-label">数据更新时间：</span>
+                            <span class="update-value" id="lastUpdateTime">--</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-number">96</div>
-                        <div class="stat-label">财务指标</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">5</div>
-                        <div class="stat-label">分析维度</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">∞</div>
-                        <div class="stat-label">数据洞察</div>
-                    </div>
-                </div>
-
-                <div class="tech-highlights">
-                    <div class="highlight-item">
-                        <span class="highlight-icon">📈</span>
-                        <span class="highlight-text">A股港股</span>
-                    </div>
-                    <div class="highlight-item">
-                        <span class="highlight-icon">📊</span>
-                        <span class="highlight-text">结构性分析</span>
-                    </div>
-                    <div class="highlight-item">
-                        <span class="highlight-icon">📋</span>
-                        <span class="highlight-text">可视化图表</span>
-                    </div>
-                    <div class="highlight-item">
-                        <span class="highlight-icon">🔍</span>
-                        <span class="highlight-text">多维度指标</span>
-                    </div>
+                    <div id="marketRiskChart" style="width: 100%; height: 400px;"></div>
                 </div>
             </div>
         </div>
@@ -5078,12 +5145,236 @@
             } else {
                 console.error('未找到analysisSwitch元素');
             }
+            
+            // 初始化市危率图表
+            console.log('初始化市危率图表...');
+            initMarketRiskChart();
+            console.log('市危率图表初始化完成');
         });
 
         // 全局变量：跟踪页面状态
         let currentPageState = 'welcome'; // 'welcome', 'analysis', 'watchlist'
         
         // 自选股相关函数
+        
+        /**
+         * 计算当日市危率
+         */
+        function updateMarketRiskRatio() {
+            // 显示按钮加载状态
+            const marketRiskBtn = document.querySelector('.market-risk-btn');
+            const originalText = marketRiskBtn.innerHTML;
+            const originalOnclick = marketRiskBtn.onclick;
+            
+            // 禁用按钮并显示加载状态
+            marketRiskBtn.disabled = true;
+            marketRiskBtn.innerHTML = '计算中...';
+            
+            // 调用后端API
+            fetch('/api/zxm/market-risk-ratio-today', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess('当日市危率计算已启动，请查看后台日志');
+                } else {
+                    showError('启动当日市危率计算失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('计算当日市危率失败:', error);
+                showError('计算当日市危率失败: ' + error.message);
+            })
+            .finally(() => {
+                // 恢复按钮状态
+                marketRiskBtn.disabled = false;
+                marketRiskBtn.innerHTML = originalText;
+                marketRiskBtn.onclick = originalOnclick;
+            });
+        }
+        
+        /**
+         * 初始化市危率图表
+         */
+        function initMarketRiskChart() {
+            const chartDom = document.getElementById('marketRiskChart');
+            if (!chartDom) return;
+            
+            const myChart = echarts.init(chartDom);
+            
+            // 设置加载动画
+            myChart.showLoading();
+            
+            // 默认配置
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const data = params[0];
+                        return `${data.name}<br/>市危率: ${data.value.toFixed(2)}`;
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#e2e8f0',
+                    borderWidth: 1,
+                    textStyle: {
+                        color: '#374151'
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: [],
+                    axisLine: {
+                        lineStyle: {
+                            color: '#cbd5e1'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#64748b',
+                        fontSize: 12
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '市危率',
+                    nameTextStyle: {
+                        color: '#64748b'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#cbd5e1'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#64748b',
+                        fontSize: 12
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#f1f5f9'
+                        }
+                    }
+                },
+                series: [{
+                    name: '市危率',
+                    type: 'bar',
+                    data: [],
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#3b82f6' },
+                            { offset: 1, color: '#1d4ed8' }
+                        ]),
+                        borderRadius: [4, 4, 0, 0]
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: '#2563eb' },
+                                { offset: 1, color: '#1e40af' }
+                            ])
+                        }
+                    }
+                }]
+            };
+            
+            myChart.setOption(option);
+            
+            // 保存图表实例到全局变量
+            window.marketRiskChart = myChart;
+            
+            // 加载初始数据
+            loadMarketRiskData();
+        }
+        
+        /**
+         * 加载市危率数据
+         */
+        function loadMarketRiskData() {
+            if (!window.marketRiskChart) return;
+            
+            const chart = window.marketRiskChart;
+            chart.showLoading();
+            
+            // 调用后端API获取市危率数据
+            fetch('/api/zxm/market-risk-ratio/all')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        displayMarketRiskChart(data.data);
+                        updateMarketRiskUpdateTime(data.data);
+                    } else {
+                        console.error('获取市危率数据失败:', data.message);
+                        chart.hideLoading();
+                        // 显示空数据状态
+                        chart.setOption({
+                            series: [{
+                                data: []
+                            }],
+                            xAxis: {
+                                data: []
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载市危率数据时发生错误:', error);
+                    chart.hideLoading();
+                });
+        }
+        
+        /**
+         * 显示市危率图表
+         */
+        function displayMarketRiskChart(data) {
+            if (!window.marketRiskChart || !data || data.length === 0) return;
+            
+            const chart = window.marketRiskChart;
+            
+            // 按日期排序
+            const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 提取日期和市危率数据
+            const dates = sortedData.map(item => item.date);
+            const values = sortedData.map(item => parseFloat(item.marketRiskRatio));
+            
+            // 更新图表数据
+            chart.setOption({
+                xAxis: {
+                    data: dates
+                },
+                series: [{
+                    data: values
+                }]
+            });
+            
+            chart.hideLoading();
+        }
+        
+        /**
+         * 更新市危率数据更新时间
+         */
+        function updateMarketRiskUpdateTime(data) {
+            if (!data || data.length === 0) return;
+            
+            // 按日期排序，获取最新数据
+            const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const latest = sortedData[sortedData.length - 1];
+            
+            // 更新数据更新时间
+            document.getElementById('lastUpdateTime').textContent = latest.date;
+        }
+        
+
+        
         function showWatchlist() {
             // 记住当前页面状态
             if (document.getElementById('chartContainer').style.display === 'block') {

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="me.huangjiacheng.hundun.mapper.MarketRiskRatioMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="me.huangjiacheng.hundun.model.MarketRiskRatio">
+        <id column="date" property="date" jdbcType="VARCHAR"/>
+        <result column="market_risk_ratio" property="marketRiskRatio" jdbcType="DECIMAL"/>
+    </resultMap>
+    
+    <!-- 基础字段列表 -->
+    <sql id="Base_Column_List">
+        date, market_risk_ratio
+    </sql>
+    
+    <!-- 插入市危率数据 -->
+    <insert id="insert" parameterType="me.huangjiacheng.hundun.model.MarketRiskRatio">
+        INSERT INTO market_risk_ratio (date, market_risk_ratio)
+        VALUES (#{date}, #{marketRiskRatio})
+    </insert>
+    
+    <!-- 根据日期更新市危率数据 -->
+    <update id="updateByDate" parameterType="me.huangjiacheng.hundun.model.MarketRiskRatio">
+        UPDATE market_risk_ratio 
+        SET market_risk_ratio = #{marketRiskRatio}
+        WHERE date = #{date}
+    </update>
+    
+    <!-- 根据日期查询市危率数据 -->
+    <select id="selectByDate" parameterType="string" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM market_risk_ratio
+        WHERE date = #{date}
+    </select>
+    
+    <!-- 查询所有市危率数据 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM market_risk_ratio
+        ORDER BY date DESC
+    </select>
+    
+    <!-- 根据日期范围查询市危率数据 -->
+    <select id="selectByDateRange" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM market_risk_ratio
+        WHERE date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY date DESC
+    </select>
+    
+</mapper>

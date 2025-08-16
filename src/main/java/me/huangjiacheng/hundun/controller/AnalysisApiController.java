@@ -20,6 +20,8 @@ import java.util.HashMap;
 import org.springframework.http.ResponseEntity;
 import me.huangjiacheng.hundun.service.AKShareRequest;
 import me.huangjiacheng.hundun.service.AKShareClient;
+import me.huangjiacheng.hundun.mapper.MarketRiskRatioMapper;
+import me.huangjiacheng.hundun.model.MarketRiskRatio;
 
 /**
  * 张新民结构性财务分析API控制器
@@ -36,6 +38,9 @@ public class AnalysisApiController {
     
     @Autowired
     private AKShareClient akShareClient;
+    
+    @Autowired
+    private MarketRiskRatioMapper marketRiskRatioMapper;
 
     
     /**
@@ -300,6 +305,99 @@ public class AnalysisApiController {
         } catch (Exception e) {
             return ResponseEntity.ok("{\"error\": \"" + e.getMessage() + "\"}");
         }
+    }
+    
+    /**
+     * 计算并保存市危率数据
+     * @return 计算结果
+     */
+    @PostMapping("/calculate-market-risk-ratio")
+    public ResponseEntity<Map<String, Object>> calculateMarketRiskRatio() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            System.out.println("开始调用市危率计算接口...");
+            
+            // 在后台线程中执行计算，避免阻塞
+            new Thread(() -> {
+                try {
+                    zxmFinancialAnalysisService.calculateAndSaveMarketRiskRatio();
+                } catch (Exception e) {
+                    System.err.println("后台计算市危率时发生错误: " + e.getMessage());
+                }
+            }).start();
+            
+            result.put("success", true);
+            result.put("message", "市危率计算已启动，请查看后台日志");
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "启动市危率计算失败: " + e.getMessage());
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+    
+    /**
+     * 计算当日市危率
+     * @return 计算结果
+     */
+    @PostMapping("/market-risk-ratio-today")
+    public ResponseEntity<Map<String, Object>> calculateTodayMarketRiskRatio() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            System.out.println("开始调用当日市危率计算接口...");
+            
+            // 在后台线程中执行计算，避免阻塞
+            new Thread(() -> {
+                try {
+                    zxmFinancialAnalysisService.marketRiskRatioToDate();
+                } catch (Exception e) {
+                    System.err.println("后台计算当日市危率时发生错误: " + e.getMessage());
+                }
+            }).start();
+            
+            result.put("success", true);
+            result.put("message", "当日市危率计算已启动，请查看后台日志");
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "启动当日市危率计算失败: " + e.getMessage());
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+    
+    /**
+     * 获取所有市危率数据
+     * @return 市危率数据列表
+     */
+    @GetMapping("/market-risk-ratio/all")
+    public ResponseEntity<Map<String, Object>> getAllMarketRiskRatios() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 调用Mapper获取所有市危率数据
+            List<MarketRiskRatio> marketRiskRatios = marketRiskRatioMapper.selectAll();
+            
+            if (marketRiskRatios != null && !marketRiskRatios.isEmpty()) {
+                result.put("success", true);
+                result.put("data", marketRiskRatios);
+                result.put("message", "获取市危率数据成功，共 " + marketRiskRatios.size() + " 条记录");
+            } else {
+                result.put("success", true);
+                result.put("data", new ArrayList<>());
+                result.put("message", "暂无市危率数据，请先点击'更新市危率'按钮计算数据");
+            }
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "获取市危率数据失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return ResponseEntity.ok(result);
     }
 
 } 
