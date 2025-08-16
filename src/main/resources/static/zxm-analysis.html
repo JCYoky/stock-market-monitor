@@ -368,6 +368,32 @@
             box-shadow: 0 1px 2px rgba(16, 185, 129, 0.3);
         }
 
+        .remove-btn {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+            min-width: 80px;
+            margin-left: 8px;
+        }
+
+        .remove-btn:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(239, 68, 68, 0.4);
+        }
+
+        .remove-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(239, 68, 68, 0.3);
+        }
+
 
 
 
@@ -5542,6 +5568,9 @@
                             <button class="detail-btn" onclick="analyzeStockFromWatchlist('${stock.stockCode}', '${stock.stockName}')">
                                 查看详情
                             </button>
+                            <button class="remove-btn" onclick="removeFromWatchlist('${stock.stockCode}', '${stock.stockName}')">
+                                删除自选
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -5608,10 +5637,72 @@
             // 设置标志，表示分析完成后需要关闭自选股列表
             window.autoCloseWatchlistAfterAnalysis = true;
             
-            // 调用标准的分析函数，确保加载动画和页面切换逻辑完全一致
-            analyzeStock();
+                    // 调用标准的分析函数，确保加载动画和页面切换逻辑完全一致
+        analyzeStock();
+    }
+
+    /**
+     * 从自选股中移除股票（将type改为0）
+     */
+    function removeFromWatchlist(stockCode, stockName) {
+        if (confirm(`确定要从自选股中移除 ${stockName}(${stockCode}) 吗？`)) {
+            // 调用后端API将股票类型改为0
+            fetch(`/api/watchlist/remove-from-watchlist/${stockCode}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess('已从自选股中移除');
+                    // 立即从表格中移除该行
+                    removeStockRowFromTable(stockCode);
+                } else {
+                    showError('移除失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('移除自选股失败:', error);
+                showError('移除失败，请稍后重试');
+            });
         }
-    </script>
+    }
+
+    /**
+     * 从表格中移除指定股票的行
+     */
+    function removeStockRowFromTable(stockCode) {
+        const tableBody = document.getElementById('watchlistTableBody');
+        const rows = tableBody.getElementsByTagName('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+            if (cells.length > 0) {
+                const codeCell = cells[0];
+                if (codeCell.textContent === stockCode) {
+                    // 添加淡出动画
+                    row.style.transition = 'opacity 0.3s ease-out';
+                    row.style.opacity = '0';
+                    
+                    // 动画完成后移除行
+                    setTimeout(() => {
+                        row.remove();
+                        
+                        // 检查是否还有其他行
+                        const remainingRows = tableBody.getElementsByTagName('tr');
+                        if (remainingRows.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">暂无观察股或持仓股数据</td></tr>';
+                        }
+                    }, 300);
+                    break;
+                }
+            }
+        }
+    }
+</script>
 </body>
 
 </html>

@@ -120,4 +120,24 @@ public class StockWatchlistServiceImpl implements StockWatchlistService {
             return null;
         }
     }
+
+    @Override
+    public boolean removeFromWatchlist(String stockCode) {
+        try {
+            // 获取现有股票信息
+            StockWatchlist existingStock = stockWatchlistMapper.selectByStockCode(stockCode);
+            if (existingStock != null) {
+                // 将股票类型改为0（系统股票）
+                existingStock.setStockType(0);
+                // 设置更新时间
+                String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                existingStock.setUpdatedTime(currentTime);
+                return stockWatchlistMapper.update(existingStock) > 0;
+            }
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

@@ -116,6 +116,30 @@ public class StockWatchlistController {
     }
 
     /**
+     * 将自选股改为系统股票（type改为0）
+     */
+    @PutMapping("/remove-from-watchlist/{stockCode}")
+    public ResponseEntity<Map<String, Object>> removeFromWatchlist(@PathVariable String stockCode) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            boolean updated = stockWatchlistService.removeFromWatchlist(stockCode);
+            if (updated) {
+                response.put("success", true);
+                response.put("message", "已从自选股中移除");
+            } else {
+                response.put("success", false);
+                response.put("message", "移除失败，可能该股票不存在");
+            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "移除失败：" + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
      * 更新自选股信息
      */
     @PutMapping("/update")
