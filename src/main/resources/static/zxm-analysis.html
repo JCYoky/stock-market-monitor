@@ -5213,6 +5213,14 @@
             const option = {
                 tooltip: {
                     trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        crossStyle: {
+                            color: '#3b82f6',
+                            width: 1,
+                            type: 'dashed'
+                        }
+                    },
                     formatter: function(params) {
                         const data = params[0];
                         return `${data.name}<br/>市危率: ${data.value.toFixed(2)}`;
@@ -5224,6 +5232,7 @@
                         color: '#374151'
                     }
                 },
+                // 添加十字准线功能
                 grid: {
                     left: '3%',
                     right: '4%',
@@ -5241,6 +5250,14 @@
                     axisLabel: {
                         color: '#64748b',
                         fontSize: 12
+                    },
+                    axisPointer: {
+                        type: 'line',
+                        lineStyle: {
+                            color: '#3b82f6',
+                            width: 1,
+                            type: 'dashed'
+                        }
                     }
                 },
                 yAxis: {
@@ -5262,7 +5279,35 @@
                         lineStyle: {
                             color: '#f1f5f9'
                         }
+                    },
+                    axisPointer: {
+                        type: 'line',
+                        lineStyle: {
+                            color: '#3b82f6',
+                            width: 1,
+                            type: 'dashed'
+                        }
                     }
+                },
+                // 全局十字准线配置
+                axisPointer: {
+                    type: 'line',
+                    lineStyle: {
+                        color: '#3b82f6',
+                        width: 1,
+                        type: 'dashed'
+                    },
+                    label: {
+                        backgroundColor: '#3b82f6',
+                        color: '#ffffff',
+                        fontSize: 12
+                    },
+                    triggerTooltip: true,
+                    show: true,
+                    // 确保准线显示
+                    animation: true,
+                    animationDuration: 0,
+                    animationEasing: 'linear'
                 },
                 series: [{
                     name: '市危率',
