@@ -27,8 +27,6 @@ public class AKShareService {
     @Autowired
     private AKShareClient akShareClient;
     
-
-    
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -462,6 +460,49 @@ public class AKShareService {
             }
         } catch (Exception e) {
             System.err.println("解析stock_zh_valuation_baidu数据失败: " + e.getMessage());
+        }
+        
+        // 按日期排序，确保最新的数据在最后
+        result.sort((a, b) -> {
+            if (a.getDate() == null && b.getDate() == null) return 0;
+            if (a.getDate() == null) return -1;
+            if (b.getDate() == null) return 1;
+            return a.getDate().compareTo(b.getDate());
+        });
+        
+        return result;
+    }
+
+    /**
+     * 获取港股历史估值数据
+     * @param symbol 港股代码
+     * @return 历史估值数据列表
+     */
+    public List<StockValuationData> getStockHkHistValuation(String symbol) {
+        List<StockValuationData> result = new ArrayList<>();
+        AKShareRequest request = new AKShareRequest();
+        request.setSymbol(symbol);
+        request.setIndicator("市盈率(TTM)");
+        request.setPeriod("全部");
+        
+        String json = akShareClient.fetchData("stock_hk_valuation_baidu", request);
+        if (json == null) {
+            return result;
+        }
+        
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isArray()) {
+                for (JsonNode node : root) {
+                    StockValuationData item = new StockValuationData();
+                    item.setDate(parseFieldValue(node, "date"));
+                    item.setSymbol(symbol);
+                    item.setValue(parseFieldValue(node, "value"));
+                    result.add(item);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("解析stock_hk_valuation_baidu数据失败: " + e.getMessage());
         }
         
         // 按日期排序，确保最新的数据在最后

@@ -1830,7 +1830,7 @@
                     if (analysisResult.status === 'fulfilled' && analysisResult.value.ok) {
                         analysisResult.value.json().then(analysisData => {
                             if (analysisData.success) {
-                                displayHkAllCharts(analysisData.debtAnalysis, analysisData.assetAnalysis, analysisData.profitDataAnalysis, analysisData.profitRatioAnalysis, analysisData.financialRatioAnalysis, analysisData.cashFlowAnalysis);
+                                displayHkAllCharts(analysisData.debtAnalysis, analysisData.assetAnalysis, analysisData.profitDataAnalysis, analysisData.profitRatioAnalysis, analysisData.financialRatioAnalysis, analysisData.cashFlowAnalysis, analysisData.peAnalysis);
 
                                 // 在图表容器创建后，显示换手率分布图表
                                 setTimeout(() => {
@@ -1910,10 +1910,14 @@
                     document.getElementById('flipStoneBtn').disabled = false;
 
                     // 显示股票基本信息
-                    displayStockInfo(stockInfo);
+                    if (stockInfo && stockInfo.code) {
+                        displayStockInfo(stockInfo);
+                    } else {
+                        console.warn('股票基本信息获取失败或数据不完整:', stockInfo);
+                    }
 
                     // 显示财务分析数据
-                    if (analysisData.success) {
+                    if (analysisData && analysisData.success) {
                         // 构建valuationAnalysis、turnoverDistributionAnalysis和shareholderAnalysis对象
                         const valuationAnalysis = {
                             symbol: symbol,
@@ -1944,12 +1948,19 @@
                             turnoverDistributionAnalysis,
                             shareholderAnalysis);
                     } else {
-                        showError(analysisData.message || '分析失败');
+                        console.error('财务分析数据获取失败:', analysisData);
+                        showError(analysisData?.message || '分析失败');
                         document.getElementById('welcomeSection').style.display = 'block';
                     }
                 })
                 .catch(error => {
                     console.error('A股分析失败:', error);
+                    console.error('错误详情:', {
+                        message: error.message,
+                        stack: error.stack,
+                        symbol: symbol,
+                        stockName: stockName
+                    });
                     completeLoading();
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;
@@ -1959,30 +1970,60 @@
         }
 
         function displayStockInfo(stockInfo) {
-            // 设置全局股票代码，供自选股功能使用
-            window.currentStockCode = stockInfo.code;
-            
-            // 更新股票信息标题
-            document.getElementById('stockInfoTitle').textContent = `${stockInfo.name || stockInfo.code} - 基本信息`;
+            try {
+                // 验证输入参数
+                if (!stockInfo || !stockInfo.code) {
+                    console.error('displayStockInfo: 无效的stockInfo参数:', stockInfo);
+                    return;
+                }
+                
+                // 设置全局股票代码，供自选股功能使用
+                window.currentStockCode = stockInfo.code;
+                
+                // 更新股票信息标题
+                const stockInfoTitleElement = document.getElementById('stockInfoTitle');
+                if (stockInfoTitleElement) {
+                    stockInfoTitleElement.textContent = `${stockInfo.name || stockInfo.code} - 基本信息`;
+                }
+                
+                // 更新各个信息字段
+                const elements = {
+                    'stockCode': stockInfo.code || '-',
+                    'stockName': stockInfo.name || '-',
+                    'stockPrice': stockInfo.latestPrice ? `¥${stockInfo.latestPrice}` : '-',
+                    'stockIndustry': stockInfo.industry || '-',
+                    'stockTotalShares': formatNumber(stockInfo.totalShares),
+                    'stockCirculatingShares': formatNumber(stockInfo.circulatingShares),
+                    'stockTotalMarketValue': formatMarketValue(stockInfo.totalMarketValue),
+                    'stockCirculatingMarketValue': formatMarketValue(stockInfo.circulatingMarketValue),
+                    'stockListingDate': formatDate(stockInfo.listingDate),
+                    'stockRoe': stockInfo.roe || '-',
+                    'stockPe': stockInfo.pe || '-'
+                };
+                
+                // 批量更新DOM元素
+                Object.entries(elements).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = value;
+                    } else {
+                        console.warn(`displayStockInfo: 找不到元素 ${id}`);
+                    }
+                });
 
-            // 更新各个信息字段
-            document.getElementById('stockCode').textContent = stockInfo.code || '-';
-            document.getElementById('stockName').textContent = stockInfo.name || '-';
-            document.getElementById('stockPrice').textContent = stockInfo.latestPrice ? `¥${stockInfo.latestPrice}` : '-';
-            document.getElementById('stockIndustry').textContent = stockInfo.industry || '-';
-            document.getElementById('stockTotalShares').textContent = formatNumber(stockInfo.totalShares);
-            document.getElementById('stockCirculatingShares').textContent = formatNumber(stockInfo.circulatingShares);
-            document.getElementById('stockTotalMarketValue').textContent = formatMarketValue(stockInfo.totalMarketValue);
-            document.getElementById('stockCirculatingMarketValue').textContent = formatMarketValue(stockInfo.circulatingMarketValue);
-            document.getElementById('stockListingDate').textContent = formatDate(stockInfo.listingDate);
-            document.getElementById('stockRoe').textContent = stockInfo.roe || '-';
-            document.getElementById('stockPe').textContent = stockInfo.pe || '-';
-
-            // 显示股票信息区域
-            document.getElementById('stockInfoSection').style.display = 'block';
-            
-            // 检查是否为自选股
-            checkWatchlistStatus(stockInfo.code);
+                // 显示股票信息区域
+                const stockInfoSection = document.getElementById('stockInfoSection');
+                if (stockInfoSection) {
+                    stockInfoSection.style.display = 'block';
+                }
+                
+                // 检查是否为自选股
+                checkWatchlistStatus(stockInfo.code);
+                
+                console.log('displayStockInfo: 股票信息显示成功:', stockInfo.code);
+            } catch (error) {
+                console.error('displayStockInfo: 显示股票信息时发生错误:', error);
+            }
         }
 
         function displayHkStockInfo(analysisData) {
@@ -3114,10 +3155,9 @@
                 originalStockName = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
             }
             
-            if (watchlistData) {
-                // 股票已在自选股中
+            if (watchlistData && (watchlistData.stockType === 1 || watchlistData.stockType === 2)) {
+                // 股票已在自选股中（观察股或持仓股）
                 const stockType = watchlistData.stockType;
-                const stockName = stockNameElement ? stockNameElement.textContent : '';
                 
                 if (stockType === 1) {
                     // 观察股 - 在标题左侧显示标记
@@ -3136,6 +3176,9 @@
                     portfolioBtn.textContent = '设为持仓股';
                     portfolioBtn.onclick = () => addToWatchlist(2);
                     portfolioBtn.style.display = 'inline-block';
+                    
+                    // 显示删除按钮
+                    addDeleteButton();
                 } else if (stockType === 2) {
                     // 持仓股 - 在标题左侧显示标记
                     if (stockInfoTitle && stockInfoTitle.textContent) {
@@ -3153,16 +3196,12 @@
                     watchBtn.textContent = '设为观察股';
                     watchBtn.onclick = () => addToWatchlist(1);
                     watchBtn.style.display = 'inline-block';
-                }
-                
-                // 只有当股票是观察股(type=1)或持仓股(type=2)时才显示删除按钮
-                if (stockType === 1 || stockType === 2) {
+                    
+                    // 显示删除按钮
                     addDeleteButton();
-                } else {
-                    removeDeleteButton();
                 }
             } else {
-                // 股票不在自选股中，显示默认按钮
+                // 股票不在自选股中，或者stockType为0（系统添加），显示默认按钮
                 // 移除标题中的标记
                 if (stockInfoTitle) {
                     stockInfoTitle.innerHTML = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
@@ -3917,10 +3956,10 @@
         // 全局变量存储A股财务分析数据
         let globalAShareAnalysisData = null;
 
-        function displayHkAllCharts(debtData, assetData, profitDataData, profitRatioData, financialRatioData, cashFlowData) {
+        function displayHkAllCharts(debtData, assetData, profitDataData, profitRatioData, financialRatioData, cashFlowData, peData) {
             // 保存数据到全局变量
             globalHkAnalysisData = {
-                debtData, assetData, profitDataData, profitRatioData, financialRatioData, cashFlowData
+                debtData, assetData, profitDataData, profitRatioData, financialRatioData, cashFlowData, peData
             };
             // 检查数据 - 港股数据按报告期组织，字段名为 yearlyRatios
             const debtRatios = debtData && debtData.yearlyRatios ? debtData.yearlyRatios : null;
@@ -4017,6 +4056,15 @@
                 <div id="hkTurnoverDistributionChart" class="chart"></div>
             </div>`;
             chartHtml += `</div>`;
+            
+            // 第五行：港股市盈率历史走势图
+            if (peData && peData.dates && peData.values && peData.dates.length > 0) {
+                chartHtml += `<div class="chart-row">`;
+                chartHtml += `<div class="chart-wrapper">
+                    <div id="hkPeHistoryChart" class="chart"></div>
+                </div>`;
+                chartHtml += `</div>`;
+            }
 
             chartContainer.innerHTML = chartHtml;
             chartContainer.style.display = 'block';
@@ -4029,7 +4077,7 @@
                 if (window.hkAssetChart && typeof window.hkAssetChart.resize === 'function') {
                     window.hkAssetChart.resize();
                 }
-                if (window.hkProfitDataChart && typeof window.hkProfitDataChart.resize === 'function') {
+                if (window.hkProfitDataChart && typeof window.hkProfitRatioChart.resize === 'function') {
                     window.hkProfitDataChart.resize();
                 }
                 if (window.hkProfitRatioChart && typeof window.hkProfitRatioChart.resize === 'function') {
@@ -4040,6 +4088,9 @@
                 }
                 if (window.hkCashFlowChart && typeof window.hkCashFlowChart.resize === 'function') {
                     window.hkCashFlowChart.resize();
+                }
+                if (window.hkPeHistoryChart && typeof window.hkPeHistoryChart.resize === 'function') {
+                    window.hkPeHistoryChart.resize();
                 }
             }, 100);
 
@@ -4092,6 +4143,15 @@
                     displayHkCashFlowChart(cashFlowData, useYearlyData);
                 } catch (e) {
                     console.warn('港股现金流量表图表显示失败:', e);
+                }
+            }
+            
+            // 绘制港股市盈率历史走势图
+            if (peData && peData.dates && peData.values && peData.dates.length > 0) {
+                try {
+                    displayHkPeHistoryChart(peData);
+                } catch (e) {
+                    console.warn('港股市盈率历史走势图显示失败:', e);
                 }
             }
         }
@@ -4340,6 +4400,12 @@
             if (cashFlowData && cashFlowData.yearlyRatios) {
                 console.log('重新绘制现金流量表图表');
                 displayHkCashFlowChart(cashFlowData, useYearlyData);
+            }
+            
+            // 重新绘制市盈率历史走势图（市盈率数据不受年度/报告期切换影响）
+            if (globalHkAnalysisData.peData && globalHkAnalysisData.peData.success) {
+                console.log('重新绘制港股市盈率历史走势图');
+                displayHkPeHistoryChart(globalHkAnalysisData.peData);
             }
             
             console.log('所有图表重新绘制完成');
@@ -4797,6 +4863,173 @@
                 chart.setOption(option);
             } catch (error) {
                 console.error('设置港股换手率分布图表选项失败:', error.message);
+            }
+        }
+
+        /**
+         * 显示港股市盈率历史走势图
+         * @param {Object} peData 市盈率数据，包含dates和values数组
+         */
+        function displayHkPeHistoryChart(peData) {
+            if (!peData || !peData.success || !peData.dates || !peData.values || peData.dates.length === 0) {
+                console.warn('港股市盈率历史数据为空');
+                return;
+            }
+
+            const dates = peData.dates;
+            const values = peData.values;
+            const stock = peData.stock;
+            
+            // 格式化日期显示，去掉时间部分，只保留日期（与其他港股图表保持一致）
+            const formattedDates = dates.map(date => {
+                if (date && date.includes('T')) {
+                    return date.split('T')[0]; // 只取日期部分，去掉时间
+                }
+                return date;
+            });
+
+            // 创建折线图
+            const chart = echarts.init(document.getElementById('hkPeHistoryChart'));
+            window.hkPeHistoryChart = chart;
+
+            const option = {
+                title: {
+                    text: `${stock} 港股市盈率(TTM)历史走势`,
+                    left: 'center',
+                    top: 16,
+                    textStyle: {
+                        fontSize: 18,
+                        fontWeight: '600',
+                        color: '#1f2937',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                    borderColor: '#e5e7eb',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                    textStyle: { color: '#374151', fontSize: 13 },
+                    confine: false,
+                    appendToBody: true,
+                    enterable: true,
+                    hideDelay: 100,
+                    axisPointer: {
+                        type: 'cross',
+                        crossStyle: {
+                            color: '#999'
+                        }
+                    },
+                    formatter: function (params) {
+                        const dataIndex = params[0].dataIndex;
+                        const date = formattedDates[dataIndex];
+                        const value = values[dataIndex];
+                        return `<div style="padding: 8px;">
+                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 8px; font-size: 14px;">日期: ${date}</div>
+                            <div style="color: #6b7280; font-size: 13px;">市盈率(TTM): <span style="font-weight: 600; color: #1f2937;">${value}</span></div>
+                        </div>`;
+                    }
+                },
+                grid: {
+                    left: '6%',
+                    right: '6%',
+                    bottom: '18%',
+                    top: '22%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: formattedDates,
+                    axisLabel: {
+                        fontSize: 11,
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        rotate: 45,
+                        interval: Math.floor(formattedDates.length / 10), // 显示约10个标签
+                        margin: 12
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#e5e7eb',
+                            width: 1
+                        }
+                    },
+                    axisTick: {
+                        show: false
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '',
+                    nameLocation: 'middle',
+                    nameGap: 40,
+                    axisLabel: {
+                        fontSize: 12,
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        formatter: function (value) {
+                            return value.toFixed(2);
+                        }
+                    },
+                    axisLine: {
+                        show: false
+                    },
+                    axisTick: {
+                        show: false
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#e5e7eb',
+                            width: 1,
+                            type: 'dashed'
+                        }
+                    }
+                },
+                series: [{
+                    name: '市盈率(TTM)',
+                    type: 'line',
+                    data: values,
+                    smooth: true,
+                    lineStyle: {
+                        color: '#3b82f6',
+                        width: 3
+                    },
+                    itemStyle: {
+                        color: '#3b82f6',
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [{
+                                offset: 0, color: 'rgba(59, 130, 246, 0.3)'
+                            }, {
+                                offset: 1, color: 'rgba(59, 130, 246, 0.05)'
+                            }]
+                        }
+                    },
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    emphasis: {
+                        itemStyle: {
+                            color: '#1d4ed8',
+                            borderColor: '#ffffff',
+                            borderWidth: 3,
+                            shadowColor: 'rgba(59, 130, 246, 0.5)',
+                            shadowBlur: 10
+                        }
+                    }
+                }]
+            };
+
+            try {
+                chart.setOption(option);
+            } catch (error) {
+                console.error('设置港股市盈率历史走势图表选项失败:', error.message);
             }
         }
 
