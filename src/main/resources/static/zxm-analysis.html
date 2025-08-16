@@ -2081,6 +2081,15 @@
                     return;
                 }
                 
+                // 先显示股票信息区域，确保DOM元素可以被访问
+                const stockInfoSection = document.getElementById('stockInfoSection');
+                if (stockInfoSection) {
+                    stockInfoSection.style.display = 'block';
+                } else {
+                    console.error('displayStockInfo: 找不到stockInfoSection元素');
+                    return;
+                }
+                
                 // 设置全局股票代码，供自选股功能使用
                 window.currentStockCode = stockInfo.code;
                 
@@ -2114,12 +2123,6 @@
                         console.warn(`displayStockInfo: 找不到元素 ${id}`);
                     }
                 });
-
-                // 显示股票信息区域
-                const stockInfoSection = document.getElementById('stockInfoSection');
-                if (stockInfoSection) {
-                    stockInfoSection.style.display = 'block';
-                }
                 
                 // 检查是否为自选股
                 checkWatchlistStatus(stockInfo.code);
@@ -2131,24 +2134,51 @@
         }
 
         function displayHkStockInfo(analysisData) {
-            // 更新港股信息标题
-            document.getElementById('stockInfoTitle').textContent = `${analysisData.stockName || analysisData.stockCode} - 港股基本信息`;
+            try {
+                // 先显示股票信息区域，确保DOM元素可以被访问
+                const stockInfoSection = document.getElementById('stockInfoSection');
+                if (stockInfoSection) {
+                    stockInfoSection.style.display = 'block';
+                } else {
+                    console.error('displayHkStockInfo: 找不到stockInfoSection元素');
+                    return;
+                }
+                
+                // 更新港股信息标题
+                const stockInfoTitleElement = document.getElementById('stockInfoTitle');
+                if (stockInfoTitleElement) {
+                    stockInfoTitleElement.textContent = `${analysisData.stockName || analysisData.stockCode} - 港股基本信息`;
+                }
 
-            // 更新各个信息字段
-            document.getElementById('stockCode').textContent = analysisData.stockCode || '-';
-            document.getElementById('stockName').textContent = analysisData.stockName || '-';
-            document.getElementById('stockPrice').textContent = '-'; // 港股暂无实时价格
-            document.getElementById('stockIndustry').textContent = '-'; // 港股暂无行业信息
-            document.getElementById('stockTotalShares').textContent = '-'; // 港股暂无总股本
-            document.getElementById('stockCirculatingShares').textContent = '-'; // 港股暂无流通股本
-            document.getElementById('stockTotalMarketValue').textContent = '-'; // 港股暂无市值
-            document.getElementById('stockCirculatingMarketValue').textContent = '-'; // 港股暂无流通市值
-            document.getElementById('stockListingDate').textContent = formatDate(analysisData.reportPeriod);
-            document.getElementById('stockRoe').textContent = '-'; // 港股暂无ROE
-            document.getElementById('stockPe').textContent = '-'; // 港股暂无PE
-
-            // 显示股票信息区域
-            document.getElementById('stockInfoSection').style.display = 'block';
+                // 更新各个信息字段
+                const elements = {
+                    'stockCode': analysisData.stockCode || '-',
+                    'stockName': analysisData.stockName || '-',
+                    'stockPrice': '-', // 港股暂无实时价格
+                    'stockIndustry': '-', // 港股暂无行业信息
+                    'stockTotalShares': '-', // 港股暂无总股本
+                    'stockCirculatingShares': '-', // 港股暂无流通股本
+                    'stockTotalMarketValue': '-', // 港股暂无市值
+                    'stockCirculatingMarketValue': '-', // 港股暂无流通市值
+                    'stockListingDate': formatDate(analysisData.reportPeriod),
+                    'stockRoe': '-', // 港股暂无ROE
+                    'stockPe': '-' // 港股暂无PE
+                };
+                
+                // 批量更新DOM元素
+                Object.entries(elements).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = value;
+                    } else {
+                        console.warn(`displayHkStockInfo: 找不到元素 ${id}`);
+                    }
+                });
+                
+                console.log('displayHkStockInfo: 港股信息显示成功:', analysisData.stockCode);
+            } catch (error) {
+                console.error('displayHkStockInfo: 显示港股信息时发生错误:', error);
+            }
         }
 
         function formatNumber(value) {
