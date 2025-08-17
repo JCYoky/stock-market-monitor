@@ -1681,20 +1681,27 @@
         <!-- 市危率展示区域 -->
         <div id="welcomeSection" class="welcome-section">
             <div class="market-risk-section">
-                <div class="section-header">
-                    <h2>市场风险指标 - 市危率趋势</h2>
-                    <p>展示A股市场整体市盈率中位数变化趋势，反映市场估值水平</p>
-                </div>
+                                  <div class="section-header">
+                      <h2>市场风险指标 - 市危率趋势</h2>
+                  </div>
                 
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <div class="update-time">
-                            <span class="update-label">数据更新时间：</span>
-                            <span class="update-value" id="lastUpdateTime">--</span>
-                        </div>
-                    </div>
-                    <div id="marketRiskChart" style="width: 100%; height: 400px;"></div>
-                </div>
+                                                  <div class="chart-container">
+                     <div class="chart-header">
+                         <div class="update-time">
+                             <span class="update-label">数据更新时间：</span>
+                             <span class="update-value" id="lastUpdateTime">--</span>
+                         </div>
+                     </div>
+                     <div id="marketRiskChart" style="width: 100%; height: 400px;"></div>
+                 </div>
+                 
+                 <!-- 市危率分布图表 -->
+                 <div class="chart-container" style="margin-top: 30px;">
+                     <div class="chart-header">
+                         <h3 style="margin: 0; color: #374151; font-size: 16px;">市危率分布统计</h3>
+                     </div>
+                     <div id="marketRiskDistributionChart" style="width: 100%; height: 300px;"></div>
+                 </div>
             </div>
         </div>
 
@@ -5303,6 +5310,9 @@
             console.log('初始化市危率图表...');
             initMarketRiskChart();
             console.log('市危率图表初始化完成');
+            
+            // 初始化市危率分布图表
+            initMarketRiskDistributionChart();
         });
 
         // 全局变量：跟踪页面状态
@@ -5492,6 +5502,110 @@
             // 加载初始数据
             loadMarketRiskData();
         }
+
+        /**
+         * 初始化市危率分布图表
+         */
+        function initMarketRiskDistributionChart() {
+            const chartDom = document.getElementById('marketRiskDistributionChart');
+            if (!chartDom) return;
+            
+            const myChart = echarts.init(chartDom);
+            
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const data = params[0];
+                        return `区间 ${data.dataIndex + 1}<br/>市危率范围: ${data.data.range}<br/>数量: ${data.value}`;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: [],
+                    axisLabel: {
+                        fontSize: 10,
+                        rotate: 45
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '数量'
+                },
+                series: [{
+                    name: '市危率分布',
+                    type: 'bar',
+                    data: [],
+                    itemStyle: {
+                        color: function(params) {
+                            return params.data.isLatest ? '#ef4444' : '#3b82f6';
+                        }
+                    }
+                }]
+            };
+            
+            myChart.setOption(option);
+            window.marketRiskDistributionChart = myChart;
+            loadMarketRiskDistributionData();
+        }
+
+        /**
+         * 初始化市危率分布图表
+         */
+        function initMarketRiskDistributionChart() {
+            const chartDom = document.getElementById('marketRiskDistributionChart');
+            if (!chartDom) return;
+            
+            const myChart = echarts.init(chartDom);
+            
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const data = params[0];
+                        return `区间 ${data.dataIndex + 1}<br/>市危率范围: ${data.data.range}<br/>数量: ${data.value}`;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: [],
+                    axisLabel: {
+                        fontSize: 10,
+                        rotate: 45
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '数量'
+                },
+                series: [{
+                    name: '市危率分布',
+                    type: 'bar',
+                    data: [],
+                    itemStyle: {
+                        color: function(params) {
+                            return params.data.isLatest ? '#ef4444' : '#3b82f6';
+                        }
+                    }
+                }]
+            };
+            
+            myChart.setOption(option);
+            window.marketRiskDistributionChart = myChart;
+            loadMarketRiskDistributionData();
+        }
         
         /**
          * 加载市危率数据
@@ -5557,6 +5671,118 @@
             chart.hideLoading();
         }
         
+        /**
+         * 加载市危率分布数据
+         */
+        function loadMarketRiskDistributionData() {
+            if (!window.marketRiskDistributionChart) return;
+            
+            fetch('/api/zxm/market-risk-ratio/distribution')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        displayMarketRiskDistributionChart(data.data);
+                    }
+                })
+                .catch(error => {
+                    console.error('加载市危率分布数据失败:', error);
+                });
+        }
+
+        /**
+         * 显示市危率分布图表
+         */
+        function displayMarketRiskDistributionChart(data) {
+            if (!window.marketRiskDistributionChart || !data) return;
+            
+            const chart = window.marketRiskDistributionChart;
+            const { minRatio, maxRatio, intervalSize, latestMarketRiskRatio, intervalCounts } = data;
+            
+            const xAxisData = [];
+            const seriesData = [];
+            
+            for (let i = 0; i < intervalCounts.length; i++) {
+                const startRatio = minRatio + i * intervalSize;
+                const endRatio = minRatio + (i + 1) * intervalSize;
+                const range = `${startRatio.toFixed(2)}-${endRatio.toFixed(2)}`;
+                
+                xAxisData.push(range);
+                
+                const isLatest = (latestMarketRiskRatio >= startRatio && latestMarketRiskRatio < endRatio);
+                
+                seriesData.push({
+                    value: intervalCounts[i],
+                    range: range,
+                    isLatest: isLatest
+                });
+            }
+            
+            chart.setOption({
+                xAxis: {
+                    data: xAxisData
+                },
+                series: [{
+                    data: seriesData
+                }]
+            });
+        }
+
+        /**
+         * 加载市危率分布数据
+         */
+        function loadMarketRiskDistributionData() {
+            if (!window.marketRiskDistributionChart) return;
+            
+            fetch('/api/zxm/market-risk-ratio/distribution')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        displayMarketRiskDistributionChart(data.data);
+                    }
+                })
+                .catch(error => {
+                    console.error('加载市危率分布数据失败:', error);
+                });
+        }
+
+        /**
+         * 显示市危率分布图表
+         */
+        function displayMarketRiskDistributionChart(data) {
+            if (!window.marketRiskDistributionChart || !data) return;
+            
+            const chart = window.marketRiskDistributionChart;
+            const { minRatio, maxRatio, intervalSize, latestMarketRiskRatio, intervalCounts } = data;
+            
+            const xAxisData = [];
+            const seriesData = [];
+            
+            for (let i = 0; i < intervalCounts.length; i++) {
+                const startRatio = minRatio + i * intervalSize;
+                const endRatio = minRatio + (i + 1) * intervalSize;
+                const range = `${startRatio.toFixed(2)}-${endRatio.toFixed(2)}`;
+                
+                xAxisData.push(range);
+                
+                const isLatest = (latestMarketRiskRatio >= startRatio && latestMarketRiskRatio < endRatio);
+                
+                seriesData.push({
+                    value: intervalCounts[i],
+                    range: range,
+                    isLatest: isLatest
+                });
+            }
+            
+            chart.setOption({
+                xAxis: {
+                    data: xAxisData
+                },
+                series: [{
+                    data: seriesData
+                }]
+            });
+        }
+
         /**
          * 更新市危率数据更新时间
          */

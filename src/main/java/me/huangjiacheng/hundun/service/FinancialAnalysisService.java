@@ -15,6 +15,7 @@ import me.huangjiacheng.hundun.mapper.MarketRiskRatioMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.*;
 
@@ -1531,13 +1532,6 @@ public class FinancialAnalysisService {
         }
     }
 
-    
-    
-    /**
-     * 计算并保存市危率数据
-     * 对于每一支A股股票，获取其历史市盈率数据，整合全部股票在每个日期的市盈率，
-     * 排序后取中位数作为市危率，存入数据库
-     */
     /**
      * 计算并保存市危率数据（从数据库最新日期开始计算）
      */
@@ -1852,6 +1846,67 @@ public class FinancialAnalysisService {
             // 如果出错，返回一个默认日期
             return "2010-01-01";
         }
+    }
+
+    /**
+     * 获取市危率分布统计
+     * 将市危率数据从小到大排序，分割成1000个区间，统计每个区间的个数
+     * @return 市危率分布统计结果
+     */
+    public Map<String, Object> getMarketRiskRatioDistribution() {
+        try {
+            // 获取所有市危率数据
+            List<MarketRiskRatio> allRatios = marketRiskRatioMapper.selectAll();
+            if (allRatios == null || allRatios.isEmpty()) {
+                return null;
+            }
+            
+            // 按市危率值从小到大排序
+            allRatios.sort((a, b) -> Double.compare(a.getMarketRiskRatio(), b.getMarketRiskRatio()));
+            
+            // 获取最新市危率数据（按日期排序）
+            List<MarketRiskRatio> sortedByDate = new ArrayList<>(allRatios);
+            sortedByDate.sort((a, b) -> b.getDate().compareTo(a.getDate()));
+            double latestMarketRiskRatio = sortedByDate.get(0).getMarketRiskRatio();
+            
+            // 计算市危率范围
+            double minRatio = allRatios.get(0).getMarketRiskRatio();
+            double maxRatio = allRatios.get(allRatios.size() - 1).getMarketRiskRatio();
+            double range = maxRatio - minRatio;
+            double intervalSize = range / 1000.0;
+            
+            // 统计每个区间的个数
+            int[] intervalCounts = new int[1000];
+            for (MarketRiskRatio ratio : allRatios) {
+                int intervalIndex = (int) Math.min(999, Math.floor((ratio.getMarketRiskRatio() - minRatio) / intervalSize));
+                intervalCounts[intervalIndex]++;
+            }
+            
+            // 构建返回结果
+            Map<String, Object> result = new HashMap<>();
+            result.put("minRatio", minRatio);
+            result.put("maxRatio", maxRatio);
+            result.put("intervalSize", intervalSize);
+            result.put("latestMarketRiskRatio", latestMarketRiskRatio);
+            result.put("intervalCounts", intervalCounts);
+            result.put("totalCount", allRatios.size());
+            
+            return result;
+            
+        } catch (Exception e) {
+            System.err.println("获取市危率分布统计时发生错误: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 定时任务：工作日（周一到周五）下午5:30自动构建所有股票的StockWatchlist
+     */
+    @Scheduled(cron = "0 30 17 * * MON-FRI")
+    public void scheduledBuildStockWatchlist() {
+        System.out.println("定时任务启动：开始构建所有股票StockWatchlist...");
+        buildStockWatchlistForAllStocks();
     }
 
     /**

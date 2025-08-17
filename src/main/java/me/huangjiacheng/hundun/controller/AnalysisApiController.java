@@ -369,4 +369,33 @@ public class AnalysisApiController {
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * 获取市危率分布统计
+     * @return 市危率分布统计结果
+     */
+    @GetMapping("/market-risk-ratio/distribution")
+    public ResponseEntity<Map<String, Object>> getMarketRiskRatioDistribution() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            Map<String, Object> distribution = zxmFinancialAnalysisService.getMarketRiskRatioDistribution();
+            
+            if (distribution != null) {
+                result.put("success", true);
+                result.put("data", distribution);
+                result.put("message", "获取市危率分布统计成功");
+            } else {
+                result.put("success", false);
+                result.put("message", "暂无市危率数据，请先计算市危率");
+            }
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "获取市危率分布统计失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+
 } 
