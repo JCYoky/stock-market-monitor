@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.*;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * 张新民结构性财务分析服务
@@ -1552,7 +1554,16 @@ public class FinancialAnalysisService {
                     StockValuationData latestValuation = valuationDataList.get(valuationDataList.size() - 1);
                     if (latestValuation.getDate() != null && latestValuation.getDate().equals(getTodayDate())) {
                         System.out.println("股票000651的最新市盈率数据日期是" + latestValuation.getDate());
-                        System.out.println("最新数据日期已经是今天(" + getTodayDate() + ")，可以计算今日市危率。");
+                        System.out.println("最新数据日期已经是今天(" + getTodayDate() + ")，可以计算今日之前的市危率。");
+                        
+                        // 检查当前时间，如果下午3点之前不执行
+                        LocalTime currentTime = LocalTime.now();
+                        LocalTime cutoffTime = LocalTime.of(15, 0); // 下午3点
+                        if (currentTime.isBefore(cutoffTime)) {
+                            System.out.println("当前时间(" + currentTime.format(DateTimeFormatter.ofPattern("HH:mm")) + ")在下午3点之前，暂不计算市危率。");
+                            return;
+                        }
+                        System.out.println("当前时间(" + currentTime.format(DateTimeFormatter.ofPattern("HH:mm")) + ")已过下午3点，可以计算市危率。");
                     } else {
                         System.out.println("最新数据日期在今天之前(" + latestValuation.getDate() + ")，暂无法计算今日市危率。");
                         return;
@@ -1574,8 +1585,8 @@ public class FinancialAnalysisService {
             
             System.out.println("获取到 " + stockList.size() + " 只A股股票");
             
-            // 用于存储每个日期的市盈率数据
-            Map<String, List<Double>> dateToPeValues = new HashMap<>();
+            // 使用TreeMap保证日期有序，预分配容量减少扩容开销
+            Map<String, List<Double>> dateToPeValues = new TreeMap<>();
             
             // 遍历每只股票，获取其历史市盈率数据
             int processedCount = 0;
@@ -1591,25 +1602,24 @@ public class FinancialAnalysisService {
                     if (valuationDataList != null && !valuationDataList.isEmpty()) {
                         // 处理每个日期的市盈率数据
                         for (StockValuationData valuation : valuationDataList) {
-                            if (valuation.getDate() != null && valuation.getValue() != null && !valuation.getValue().trim().isEmpty()) {
-                                String date = valuation.getDate();
-                                
-                                // 检查日期是否在最新日期之后
-                                if (isDateAfterOrEqual(date, latestDate)) {
-                                    try {
-                                        double peValue = Double.parseDouble(valuation.getValue());
-                                        // 负数视为正无穷
-                                        double processedPeValue = peValue < 0 ? Double.POSITIVE_INFINITY : peValue;
-                                        
-                                        // 标准化日期格式为YYYY-MM-DD
-                                        String normalizedDate = normalizeDate(date);
-                                        
-                                        // 将市盈率添加到对应日期的列表中
-                                        dateToPeValues.computeIfAbsent(normalizedDate, k -> new ArrayList<>()).add(processedPeValue);
-                                    } catch (NumberFormatException e) {
-                                        // 忽略无法解析的数据
-                                        continue;
-                                    }
+                            String date = valuation.getDate();
+                            String value = valuation.getValue();
+                            
+                            // 快速验证，减少不必要的处理
+                            if (date != null && value != null && !value.trim().isEmpty() && isDateAfterOrEqual(date, latestDate)) {
+                                try {
+                                    double peValue = Double.parseDouble(value);
+                                    // 负数视为正无穷
+                                    double processedPeValue = peValue < 0 ? Double.POSITIVE_INFINITY : peValue;
+                                    
+                                    // 标准化日期格式为YYYY-MM-DD
+                                    String normalizedDate = normalizeDate(date);
+                                    
+                                    // 预分配容量，减少扩容开销
+                                    dateToPeValues.computeIfAbsent(normalizedDate, k -> new ArrayList<>(50)).add(processedPeValue);
+                                } catch (NumberFormatException e) {
+                                    // 忽略无法解析的数据
+                                    continue;
                                 }
                             }
                         }
@@ -1629,8 +1639,8 @@ public class FinancialAnalysisService {
             System.out.println("市盈率数据收集完成，共处理 " + processedCount + " 只股票");
             System.out.println("收集到 " + dateToPeValues.size() + " 个日期的数据");
             
-            // 计算每个日期的市危率（中位数）
-            List<MarketRiskRatio> marketRiskRatios = new ArrayList<>();
+            // 计算每个日期的市危率（中位数），预分配容量减少扩容开销
+            List<MarketRiskRatio> marketRiskRatios = new ArrayList<>(dateToPeValues.size());
             for (Map.Entry<String, List<Double>> entry : dateToPeValues.entrySet()) {
                 String date = entry.getKey();
                 List<Double> peValues = entry.getValue();
@@ -1639,15 +1649,16 @@ public class FinancialAnalysisService {
                     // 排序市盈率数据
                     Collections.sort(peValues);
                     
-                    // 计算中位数
+                    // 计算中位数，使用乘法代替除法提高性能
                     double medianPe;
                     int size = peValues.size();
+                    int mid = size / 2;
                     if (size % 2 == 0) {
-                        // 偶数个数据，取中间两个数的平均值
-                        medianPe = (peValues.get(size / 2 - 1) + peValues.get(size / 2)) / 2.0;
+                        // 偶数个数据，取中间两个数的平均值，使用乘法代替除法
+                        medianPe = (peValues.get(mid - 1) + peValues.get(mid)) * 0.5;
                     } else {
                         // 奇数个数据，取中间的数
-                        medianPe = peValues.get(size / 2);
+                        medianPe = peValues.get(mid);
                     }
                     
                     // 创建市危率模型，保留两位小数
