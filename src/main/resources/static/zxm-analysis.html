@@ -222,11 +222,21 @@
             border-bottom: 2px solid #e5e7eb;
         }
 
+        .watchlist-filters {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-left: auto;
+            margin-right: 12px;
+        }
+
         .watchlist-title {
             font-size: 1.25rem;
             font-weight: 700;
             color: #111827;
         }
+
+
 
         .watchlist-close {
             background: #ef4444;
@@ -277,6 +287,35 @@
             font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            position: relative;
+            padding: 8px 12px;
+        }
+
+        .filter-option {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            white-space: nowrap;
+        }
+
+        .filter-option:hover {
+            background: #e5e7eb;
+            color: #111827;
+            border-color: #9ca3af;
+        }
+
+        .filter-option.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            font-weight: 600;
         }
 
         .watchlist-table tr:hover {
@@ -1608,10 +1647,15 @@
 
         <!-- 自选股表格区域 -->
         <div id="watchlistSection" class="watchlist-section">
-            <div class="watchlist-header">
-                <h2 class="watchlist-title">自选股列表</h2>
-                <button class="watchlist-close" onclick="hideWatchlist()">关闭</button>
-            </div>
+                            <div class="watchlist-header">
+                    <h2 class="watchlist-title">自选股列表</h2>
+                    <div class="watchlist-filters">
+                        <span class="filter-option active" data-type="all" onclick="switchTypeFilter('all')">全部</span>
+                        <span class="filter-option" data-type="portfolio" onclick="switchTypeFilter('portfolio')">持仓股</span>
+                        <span class="filter-option" data-type="observation" onclick="switchTypeFilter('observation')">观察股</span>
+                    </div>
+                    <button class="watchlist-close" onclick="hideWatchlist()">关闭</button>
+                </div>
             <div id="watchlistTableContainer">
                 <table class="watchlist-table">
                     <thead>
@@ -5609,6 +5653,10 @@
                 });
         }
 
+        // 全局变量存储当前类型过滤器和原始数据
+        let currentTypeFilter = 'all';
+        let originalWatchlistData = [];
+
         function displayWatchlistData(watchlistData) {
             const tableBody = document.getElementById('watchlistTableBody');
             
@@ -5617,11 +5665,14 @@
                 return;
             }
             
-            // 过滤数据，只显示type=1（观察股）和type=2（持仓股）
-            const filteredData = watchlistData.filter(stock => stock.stockType === 1 || stock.stockType === 2);
+            // 保存原始数据
+            originalWatchlistData = watchlistData;
+            
+            // 根据当前类型过滤器过滤数据
+            const filteredData = filterDataByType(watchlistData, currentTypeFilter);
             
             if (filteredData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">暂无观察股或持仓股数据</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">暂无符合条件的数据</td></tr>';
                 return;
             }
             
@@ -5644,7 +5695,7 @@
                         <td><span class="stock-type-badge ${stockTypeClass}">${stockTypeText}</span></td>
                         <td>${formatNumber(stock.peTtm)}</td>
                         <td>${formatNumber(stock.roe)}%</td>
-                        <td>${formatNumber(stock.profitQuality)}</td>
+                        <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.peScore)}</td>
                         <td>
@@ -5660,6 +5711,57 @@
             });
             
             tableBody.innerHTML = html;
+        }
+
+        /**
+         * 根据类型过滤器过滤数据
+         */
+        function filterDataByType(data, typeFilter) {
+            switch (typeFilter) {
+                case 'all':
+                    // 显示所有自选股（type=1和type=2）
+                    return data.filter(stock => stock.stockType === 1 || stock.stockType === 2);
+                case 'portfolio':
+                    // 只显示持仓股（type=2）
+                    return data.filter(stock => stock.stockType === 2);
+                case 'observation':
+                    // 只显示观察股（type=1）
+                    return data.filter(stock => stock.stockType === 1);
+                default:
+                    return data.filter(stock => stock.stockType === 1 || stock.stockType === 2);
+            }
+        }
+
+        /**
+         * 切换类型过滤器
+         */
+        function switchTypeFilter(type) {
+            // 更新当前过滤器
+            currentTypeFilter = type;
+            
+            // 更新UI状态
+            updateFilterUI(type);
+            
+            // 重新显示数据
+            if (originalWatchlistData.length > 0) {
+                displayWatchlistData(originalWatchlistData);
+            }
+        }
+
+        /**
+         * 更新过滤器UI状态
+         */
+        function updateFilterUI(activeType) {
+            // 移除所有active类
+            document.querySelectorAll('.filter-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            // 为当前选中的类型添加active类
+            const activeOption = document.querySelector(`[data-type="${activeType}"]`);
+            if (activeOption) {
+                activeOption.classList.add('active');
+            }
         }
 
         function getStockTypeText(stockType) {
