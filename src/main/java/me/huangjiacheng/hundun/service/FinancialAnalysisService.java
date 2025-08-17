@@ -1551,16 +1551,22 @@ public class FinancialAnalysisService {
                 System.out.println("数据库中暂无市危率数据，将从2010-01-01开始计算");
                 latestDate = "2010-01-01";
             } else {
-                System.out.println("数据库中最新的市危率数据日期: " + latestDate);
-                
-                // 检查最新日期是否已经是今天
-                String today = getTodayDate();
-                if (latestDate.equals(today)) {
-                    System.out.println("最新数据日期已经是今天(" + today + ")，无需重复计算");
-                    return;
+                // 检查某一只股票（000651）的市盈率最新的全部历史数据，如果最新数据在今天之前，证明今日的市盈率数据还未更新，则不必计算。
+                String stockCode = "000651";
+                List<StockValuationData> valuationDataList = akShareService.getStockValuationData(stockCode);
+                if (valuationDataList != null && !valuationDataList.isEmpty()) {
+                    StockValuationData latestValuation = valuationDataList.get(valuationDataList.size() - 1);
+                    if (latestValuation.getDate() != null && latestValuation.getDate().equals(getTodayDate())) {
+                        System.out.println("股票000651的最新市盈率数据日期是" + latestValuation.getDate());
+                        System.out.println("最新数据日期已经是今天(" + getTodayDate() + ")，可以计算今日市危率。");
+                    } else {
+                        System.out.println("最新数据日期在今天之前(" + latestValuation.getDate() + ")，暂无法计算今日市危率。");
+                        return;
+                    }
                 }
-                
+
                 // 计算下一个日期
+                System.out.println("数据库中最新的市危率数据日期: " + latestDate);
                 latestDate = getNextDate(latestDate);
                 System.out.println("将从 " + latestDate + " 开始计算新的市危率数据");
             }
@@ -1845,6 +1851,81 @@ public class FinancialAnalysisService {
             System.err.println("获取今天日期时发生错误: " + e.getMessage());
             // 如果出错，返回一个默认日期
             return "2010-01-01";
+        }
+    }
+
+    /**
+     * 为所有A股和港股股票（排除已在StockWatchlist表中的）构建StockWatchlist对象并保存
+     * 尽量使用已有的代码，不重新造轮子
+     */
+    public void buildStockWatchlistForAllStocks() {
+        try {
+            System.out.println("开始为所有股票构建StockWatchlist对象...");
+            
+            // 获取已在数据库中的股票代码
+            List<String> existingStockCodes = stockWatchlistService.getAllStockCodes();
+            Set<String> existingStockCodeSet = new HashSet<>();
+            if (existingStockCodes != null) {
+                existingStockCodeSet.addAll(existingStockCodes);
+            }
+            
+            // 获取所有A股股票列表
+            List<StockInfo> aShareStocks = akShareService.getStockList();
+            if (aShareStocks != null && !aShareStocks.isEmpty()) {
+                System.out.println("获取到 " + aShareStocks.size() + " 支A股股票");
+                
+                for (StockInfo stock : aShareStocks) {
+                    String stockCode = stock.getCode();
+                    String stockName = stock.getName();
+                    
+                    // 跳过已在数据库中的股票
+                    if (existingStockCodeSet.contains(stockCode)) {
+                        continue;
+                    }
+                    
+                    try {
+                        // 使用现有的分析方法构建StockWatchlist
+                        analyzeFinancialStructure(stockCode, stockName);
+                        System.out.println("成功为A股 " + stockCode + " - " + stockName + " 构建StockWatchlist");
+                    } catch (Exception e) {
+                        System.err.println("为A股 " + stockCode + " - " + stockName + " 构建StockWatchlist失败: " + e.getMessage());
+                    }
+                }
+            }
+            
+            // 获取所有港股股票列表
+            List<StockInfo> hkStocks = akShareService.getHKStockList();
+            if (hkStocks != null && !hkStocks.isEmpty()) {
+                System.out.println("获取到 " + hkStocks.size() + " 支港股股票");
+                
+                for (StockInfo stock : hkStocks) {
+                    String stockCode = stock.getCode();
+                    String stockName = stock.getName();
+                    
+                    // 跳过已在数据库中的股票
+                    if (existingStockCodeSet.contains(stockCode)) {
+                        continue;
+                    }
+                    
+                    try {
+                        // 使用现有的分析方法构建StockWatchlist
+                        analyzeHkFinancialStructure(stockCode, stockName);
+                        System.out.println("成功为港股 " + stockCode + " - " + stockName + " 构建StockWatchlist");
+                        
+                        // 添加短暂延迟，避免请求过于频繁
+                        Thread.sleep(100);
+                        
+                    } catch (Exception e) {
+                        System.err.println("为港股 " + stockCode + " - " + stockName + " 构建StockWatchlist失败: " + e.getMessage());
+                    }
+                }
+            }
+            
+            System.out.println("所有股票StockWatchlist构建完成！");
+            
+        } catch (Exception e) {
+            System.err.println("构建所有股票StockWatchlist时发生错误: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

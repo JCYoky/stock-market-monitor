@@ -43,4 +43,9 @@ public interface StockWatchlistService {
      * 将自选股改为系统股票（type改为0）
      */
     boolean removeFromWatchlist(String stockCode);
+    
+    /**
+     * 获取所有股票代码
+     */
+    List<String> getAllStockCodes();
 }

@@ -140,4 +140,14 @@ public class StockWatchlistServiceImpl implements StockWatchlistService {
             return false;
         }
     }
+
+    @Override
+    public List<String> getAllStockCodes() {
+        try {
+            return stockWatchlistMapper.selectAllStockCodes();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

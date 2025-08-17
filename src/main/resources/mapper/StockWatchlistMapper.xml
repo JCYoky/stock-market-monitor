@@ -73,4 +73,10 @@
         ORDER BY created_time DESC
     </select>
 
+    <!-- 获取所有股票代码 -->
+    <select id="selectAllStockCodes" resultType="string">
+        SELECT stock_code
+        FROM stock_watchlist
+    </select>
+
 </mapper>

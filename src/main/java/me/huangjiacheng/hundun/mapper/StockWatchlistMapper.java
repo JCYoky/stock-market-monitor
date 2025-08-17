@@ -41,4 +41,9 @@ public interface StockWatchlistMapper {
      * 根据股票类型查询自选股
      */
     List<StockWatchlist> selectByStockType(@Param("stockType") Integer stockType);
+    
+    /**
+     * 获取所有股票代码
+     */
+    List<String> selectAllStockCodes();
 }
