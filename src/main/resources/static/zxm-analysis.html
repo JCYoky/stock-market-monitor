@@ -1622,7 +1622,7 @@
                             <th>市盈率TTM</th>
                             <th>ROE(%)</th>
                             <th>利润质量</th>
-                            <th>资产质量得分</th>
+                            <th>资产质量</th>
                             <th>市盈率得分</th>
                             <th style="width: 140px;">操作</th>
                         </tr>
@@ -2105,8 +2105,8 @@
                     'stockName': stockInfo.name || '-',
                     'stockPrice': stockInfo.latestPrice ? `¥${stockInfo.latestPrice}` : '-',
                     'stockIndustry': stockInfo.industry || '-',
-                    'stockTotalShares': formatNumber(stockInfo.totalShares),
-                    'stockCirculatingShares': formatNumber(stockInfo.circulatingShares),
+                    'stockTotalShares': formatShares(stockInfo.totalShares),
+                    'stockCirculatingShares': formatShares(stockInfo.circulatingShares),
                     'stockTotalMarketValue': formatMarketValue(stockInfo.totalMarketValue),
                     'stockCirculatingMarketValue': formatMarketValue(stockInfo.circulatingMarketValue),
                     'stockListingDate': formatDate(stockInfo.listingDate),
@@ -2200,6 +2200,48 @@
                     return num.toLocaleString();
                 } else {
                     return num.toFixed(2);
+                }
+            }
+        }
+
+        /**
+         * 格式化股本数据，专门用于总股本和流通股的显示
+         */
+        function formatShares(value) {
+            if (!value) return '-';
+            const num = parseFloat(value);
+            if (isNaN(num)) return '-';
+
+            // 过千亿的股本显示为千亿单位，保留两位小数
+            if (num >= 1e11) {
+                return (num / 1e11).toFixed(2) + '千亿股';
+            }
+            // 过百亿的股本显示为百亿单位，保留两位小数
+            else if (num >= 1e10) {
+                return (num / 1e10).toFixed(2) + '百亿股';
+            }
+            // 过亿的股本显示为亿单位，保留两位小数
+            else if (num >= 1e8) {
+                return (num / 1e8).toFixed(2) + '亿股';
+            }
+            // 过千万的股本显示为千万单位，保留两位小数
+            else if (num >= 1e7) {
+                return (num / 1e7).toFixed(2) + '千万股';
+            }
+            // 过百万的股本显示为百万单位，保留两位小数
+            else if (num >= 1e6) {
+                return (num / 1e6).toFixed(2) + '百万股';
+            }
+            // 过万的股本显示为万单位，保留两位小数
+            else if (num >= 1e4) {
+                return (num / 1e4).toFixed(2) + '万股';
+            }
+            // 小于1万的股本，如果是整数则显示整数，否则保留两位小数
+            else {
+                if (Number.isInteger(num)) {
+                    return num.toLocaleString() + '股';
+                } else {
+                    return num.toFixed(2) + '股';
                 }
             }
         }
@@ -5603,7 +5645,7 @@
                         <td>${formatNumber(stock.peTtm)}</td>
                         <td>${formatNumber(stock.roe)}%</td>
                         <td>${formatNumber(stock.profitQuality)}</td>
-                        <td>${formatNumber(stock.assetsQuality)}</td>
+                        <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.peScore)}</td>
                         <td>
                             <button class="detail-btn" onclick="analyzeStockFromWatchlist('${stock.stockCode}', '${stock.stockName}')">
