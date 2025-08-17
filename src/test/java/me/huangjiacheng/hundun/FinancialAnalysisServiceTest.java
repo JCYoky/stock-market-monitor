@@ -18,26 +18,6 @@ public class FinancialAnalysisServiceTest {
     private FinancialAnalysisService financialAnalysisService;
 
     /**
-     * 测试启动构建所有股票StockWatchlist
-     * 这个方法可以单独运行来启动批量构建过程
-     */
-    @Test
-    public void testBuildAllStockWatchlist() {
-        System.out.println("=== 开始测试构建所有股票StockWatchlist ===");
-        
-        try {
-            // 启动构建过程
-            financialAnalysisService.buildStockWatchlistForAllStocks();
-            
-            System.out.println("=== 测试完成：所有股票StockWatchlist构建已启动 ===");
-            
-        } catch (Exception e) {
-            System.err.println("测试失败：" + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * 测试获取股票列表功能
      */
     @Test

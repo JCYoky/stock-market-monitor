@@ -1849,6 +1849,15 @@ public class FinancialAnalysisService {
     }
 
     /**
+     * 定时任务：工作日（周一到周五）下午5:30自动计算市危率
+     */
+    @Scheduled(cron = "0 30 17 * * MON-FRI")
+    public void scheduledCalculateMarketRiskRatio() {
+        System.out.println("定时任务启动：开始计算市危率...");
+        calculateAndSaveMarketRiskRatio();
+    }
+
+    /**
      * 获取市危率分布统计
      * 将市危率数据从小到大排序，分割成1000个区间，统计每个区间的个数
      * @return 市危率分布统计结果
@@ -1897,90 +1906,6 @@ public class FinancialAnalysisService {
             System.err.println("获取市危率分布统计时发生错误: " + e.getMessage());
             e.printStackTrace();
             return null;
-        }
-    }
-
-    /**
-     * 定时任务：工作日（周一到周五）下午5:30自动构建所有股票的StockWatchlist
-     */
-    @Scheduled(cron = "0 30 17 * * MON-FRI")
-    public void scheduledBuildStockWatchlist() {
-        System.out.println("定时任务启动：开始构建所有股票StockWatchlist...");
-        buildStockWatchlistForAllStocks();
-    }
-
-    /**
-     * 为所有A股和港股股票（排除已在StockWatchlist表中的）构建StockWatchlist对象并保存
-     * 尽量使用已有的代码，不重新造轮子
-     */
-    public void buildStockWatchlistForAllStocks() {
-        try {
-            System.out.println("开始为所有股票构建StockWatchlist对象...");
-            
-            // 获取已在数据库中的股票代码
-            List<String> existingStockCodes = stockWatchlistService.getAllStockCodes();
-            Set<String> existingStockCodeSet = new HashSet<>();
-            if (existingStockCodes != null) {
-                existingStockCodeSet.addAll(existingStockCodes);
-            }
-            
-            // 获取所有A股股票列表
-            List<StockInfo> aShareStocks = akShareService.getStockList();
-            if (aShareStocks != null && !aShareStocks.isEmpty()) {
-                System.out.println("获取到 " + aShareStocks.size() + " 支A股股票");
-                
-                for (StockInfo stock : aShareStocks) {
-                    String stockCode = stock.getCode();
-                    String stockName = stock.getName();
-                    
-                    // 跳过已在数据库中的股票
-                    if (existingStockCodeSet.contains(stockCode)) {
-                        continue;
-                    }
-                    
-                    try {
-                        // 使用现有的分析方法构建StockWatchlist
-                        analyzeFinancialStructure(stockCode, stockName);
-                        System.out.println("成功为A股 " + stockCode + " - " + stockName + " 构建StockWatchlist");
-                    } catch (Exception e) {
-                        System.err.println("为A股 " + stockCode + " - " + stockName + " 构建StockWatchlist失败: " + e.getMessage());
-                    }
-                }
-            }
-            
-            // 获取所有港股股票列表
-            List<StockInfo> hkStocks = akShareService.getHKStockList();
-            if (hkStocks != null && !hkStocks.isEmpty()) {
-                System.out.println("获取到 " + hkStocks.size() + " 支港股股票");
-                
-                for (StockInfo stock : hkStocks) {
-                    String stockCode = stock.getCode();
-                    String stockName = stock.getName();
-                    
-                    // 跳过已在数据库中的股票
-                    if (existingStockCodeSet.contains(stockCode)) {
-                        continue;
-                    }
-                    
-                    try {
-                        // 使用现有的分析方法构建StockWatchlist
-                        analyzeHkFinancialStructure(stockCode, stockName);
-                        System.out.println("成功为港股 " + stockCode + " - " + stockName + " 构建StockWatchlist");
-                        
-                        // 添加短暂延迟，避免请求过于频繁
-                        Thread.sleep(100);
-                        
-                    } catch (Exception e) {
-                        System.err.println("为港股 " + stockCode + " - " + stockName + " 构建StockWatchlist失败: " + e.getMessage());
-                    }
-                }
-            }
-            
-            System.out.println("所有股票StockWatchlist构建完成！");
-            
-        } catch (Exception e) {
-            System.err.println("构建所有股票StockWatchlist时发生错误: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 }
