@@ -190,20 +190,7 @@
             transform: scale(1.1) rotate(5deg);
         }
         
-        /* 更新市危率按钮特殊样式 */
-        .market-risk-btn {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-        }
-        
-        .market-risk-btn:hover {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.6);
-        }
-        
-        .market-risk-btn:active {
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
-        }
+
 
         /* 自选股表格样式 */
         .watchlist-section {
@@ -1617,9 +1604,6 @@
             <div class="nav-section">
                 <button class="nav-button" onclick="showWatchlist()">
                     自选股
-                </button>
-                <button class="nav-button market-risk-btn" onclick="updateMarketRiskRatio()">
-                    更新市危率
                 </button>
             </div>
         </div>
@@ -5320,45 +5304,7 @@
         
         // 自选股相关函数
         
-        /**
-         * 更新市危率数据
-         */
-        function updateMarketRiskRatio() {
-            // 显示按钮加载状态
-            const marketRiskBtn = document.querySelector('.market-risk-btn');
-            const originalText = marketRiskBtn.innerHTML;
-            const originalOnclick = marketRiskBtn.onclick;
-            
-            // 禁用按钮并显示加载状态
-            marketRiskBtn.disabled = true;
-            marketRiskBtn.innerHTML = '计算中...';
-            
-            // 调用后端API
-            fetch('/api/zxm/calculate-market-risk-ratio', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showSuccess('市危率计算已启动，请查看后台日志');
-                } else {
-                    showError('启动市危率计算失败: ' + (data.message || '未知错误'));
-                }
-            })
-            .catch(error => {
-                console.error('计算市危率失败:', error);
-                showError('计算市危率失败: ' + error.message);
-            })
-            .finally(() => {
-                // 恢复按钮状态
-                marketRiskBtn.disabled = false;
-                marketRiskBtn.innerHTML = originalText;
-                marketRiskBtn.onclick = originalOnclick;
-            });
-        }
+
         
         /**
          * 初始化市危率图表

@@ -57,4 +57,25 @@ public class FinancialAnalysisServiceTest {
             e.printStackTrace();
         }
     }
+
+    /**
+     * 手动触发更新市危率操作
+     * 这个方法可以单独运行来手动启动市危率计算
+     */
+    @Test
+    public void testUpdateMarketRiskRatio() {
+        System.out.println("=== 开始手动触发更新市危率操作 ===");
+        
+        try {
+            // 手动调用市危率计算方法
+            financialAnalysisService.calculateAndSaveMarketRiskRatio();
+            
+            System.out.println("=== 市危率更新操作已启动 ===");
+            System.out.println("请查看控制台输出和后台日志了解执行情况");
+            
+        } catch (Exception e) {
+            System.err.println("手动触发市危率更新失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }
