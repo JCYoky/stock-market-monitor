@@ -40,6 +40,11 @@ public interface StockWatchlistService {
     List<StockWatchlist> getStocksByType(Integer stockType);
     
     /**
+     * 根据多个股票类型查询自选股
+     */
+    List<StockWatchlist> getStocksByTypes(List<Integer> stockTypes);
+    
+    /**
      * 将自选股改为系统股票（type改为0）
      */
     boolean removeFromWatchlist(String stockCode);

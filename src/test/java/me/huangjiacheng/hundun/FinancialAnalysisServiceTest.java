@@ -81,4 +81,53 @@ public class FinancialAnalysisServiceTest {
             logger.error("❌ 手动触发市危率更新失败：{}", e.getMessage(), e);
         }
     }
+
+    /**
+     * 测试构建WatchList功能
+     * 测试单个股票的WatchList构建
+     */
+    @Test
+    public void testBuildWatchList() {
+        logger.info("=== 测试构建WatchList功能 ===");
+        
+        try {
+            String testStockCode = "000001"; // 平安银行
+            String testStockName = "平安银行";
+            
+            logger.info("开始构建WatchList：{} - {}", testStockCode, testStockName);
+            
+            // 调用构建WatchList方法
+            boolean result = financialAnalysisService.buildWatchList(testStockCode, testStockName);
+            
+            if (result) {
+                logger.info("✅ WatchList构建成功：{} - {}", testStockCode, testStockName);
+            } else {
+                logger.warn("⚠️ WatchList构建失败：{} - {}", testStockCode, testStockName);
+            }
+            
+        } catch (Exception e) {
+            logger.error("❌ 构建WatchList失败：{}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 测试为我的股票构建WatchList功能
+     * 测试批量更新type为1或2的股票
+     */
+    @Test
+    public void testBuildWatchListForMyStocks() {
+        logger.info("=== 测试为我的股票构建WatchList功能 ===");
+        
+        try {
+            logger.info("开始为我的股票构建WatchList...");
+            
+            // 调用为我的股票构建WatchList方法
+            financialAnalysisService.buildWatchListForMyStocks();
+            
+            logger.info("✅ 为我的股票构建WatchList完成");
+            
+        } catch (Exception e) {
+            logger.error("❌ 为我的股票构建WatchList失败：{}", e.getMessage(), e);
+        }
+    }
 }

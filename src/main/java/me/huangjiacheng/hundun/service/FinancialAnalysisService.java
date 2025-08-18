@@ -38,9 +38,6 @@ public class FinancialAnalysisService {
     @Autowired
     private MarketRiskRatioMapper marketRiskRatioMapper;
 
-    @Autowired
-    private LoboDataService loboDataService;
-
     /**
      * 综合分析上市公司财务状况，包括负债结构和资产结构
      * 
@@ -353,57 +350,8 @@ public class FinancialAnalysisService {
 
         // 构建StockWatchlist对象，使用最新报告期的数据
         try {
-            // 获取最新报告期的数据
-            String latestPeriod = periodData.keySet().iterator().next(); // 由于使用TreeMap倒序，第一个就是最新的
-            Map<String, Object> latestData = periodData.get(latestPeriod);
-            
-            if (latestData != null) {
-                StockFinancialDebtThs latestBalanceSheet = (StockFinancialDebtThs) latestData.get("balanceSheet");
-                StockFinancialBenefitThs latestIncomeStatement = (StockFinancialBenefitThs) latestData.get("incomeStatement");
-                
-                if (latestBalanceSheet != null && latestIncomeStatement != null) {
-                    // 构建StockWatchlist对象
-                    StockWatchlist stockWatchlist = new StockWatchlist();
-                    stockWatchlist.setStockCode(symbol);
-                    stockWatchlist.setStockName(stockName);
-                    stockWatchlist.setStockType(0); // 默认类型为0，后续业务逻辑会设置
-                    
-                    // 设置财务指标（使用最新报告期数据）
-                    setASharePeTtm(stockWatchlist, valuationDataList);
-                    setAShareRoe(stockWatchlist, symbol);
-                    setAShareProfitQuality(stockWatchlist, periodData);
-                    setAShareAssetsQuality(stockWatchlist, assetRatios, latestPeriod);
-                    setASharePeScore(stockWatchlist, valuationDataList);
-                    
-                    System.out.println("构建StockWatchlist对象: " + symbol + " - " + stockName + ", peTtm: " + stockWatchlist.getPeTtm() + ", roe: " + stockWatchlist.getRoe() + ", profitQuality: " + stockWatchlist.getProfitQuality() + ", assetsQuality: " + stockWatchlist.getAssetsQuality() + ", peScore: " + stockWatchlist.getPeScore());
-                    
-                    // 保存StockWatchlist对象到数据库
-                    try {
-                        // 检查是否已存在
-                        StockWatchlist existingStock = stockWatchlistService.getStockByCode(symbol);
-                        if (existingStock != null) {
-                            // 更新：保持原有StockType不变
-                            stockWatchlist.setStockType(existingStock.getStockType());
-                            stockWatchlist.setId(existingStock.getId());
-                            stockWatchlist.setCreatedTime(existingStock.getCreatedTime());
-                            stockWatchlist.setUpdatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
-                            
-                            stockWatchlistService.updateStock(stockWatchlist);
-                            System.out.println("更新StockWatchlist成功: " + symbol + ", 保持原有类型: " + existingStock.getStockType());
-                        } else {
-                            // 新增：StockType设为0
-                            stockWatchlist.setStockType(0);
-                            stockWatchlist.setCreatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
-                            stockWatchlist.setUpdatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
-                            
-                            stockWatchlistService.addStock(stockWatchlist);
-                            System.out.println("新增StockWatchlist成功: " + symbol + ", 类型设为: 0");
-                        }
-                    } catch (Exception e) {
-                        System.err.println("保存StockWatchlist失败: " + symbol + " - " + e.getMessage());
-                    }
-                }
-            }
+            // 使用公共方法构建和保存StockWatchlist
+            buildWatchList(symbol, stockName);
         } catch (Exception e) {
             // 构建StockWatchlist失败不影响主要分析结果
             System.err.println("构建StockWatchlist对象失败: " + e.getMessage());
@@ -412,34 +360,598 @@ public class FinancialAnalysisService {
         return result;
     }
 
-    // 解析财务数值，支持单位和异常处理
+    /**
+     * 为我的股票（type为1或2）构建StockWatchList对象并更新数据库
+     * 定时任务：每个工作日下午5:30执行
+     */
+    @Scheduled(cron = "0 30 17 * * MON-FRI")
+    public void buildWatchListForMyStocks() {
+        System.out.println("定时任务启动：开始为我的股票构建StockWatchList...");
+        System.out.println("当前时间：" + DATE_FORMAT.format(new java.util.Date()));
+        
+        try {
+            // 获取所有type为1或2的股票
+            List<StockWatchlist> myStocks = stockWatchlistService.getStocksByTypes(Arrays.asList(1, 2));
+            
+            if (myStocks == null || myStocks.isEmpty()) {
+                System.out.println("没有找到type为1或2的股票");
+                return;
+            }
+            
+            System.out.println("找到 " + myStocks.size() + " 只我的股票，开始更新...");
+            
+            int successCount = 0;
+            int failCount = 0;
+            
+            for (StockWatchlist stock : myStocks) {
+                try {
+                    String symbol = stock.getStockCode();
+                    String stockName = stock.getStockName();
+                    
+                    System.out.println("正在更新股票：" + symbol + " - " + stockName);
+                    
+                    // 使用buildWatchList方法更新该股票
+                    boolean success = buildWatchList(symbol, stockName);
+                    
+                    if (success) {
+                        successCount++;
+                        System.out.println("✅ 成功更新股票：" + symbol + " - " + stockName);
+                    } else {
+                        failCount++;
+                        System.out.println("❌ 更新失败股票：" + symbol + " - " + stockName);
+                    }
+                    
+                    // 添加短暂延迟，避免请求过于频繁
+                    Thread.sleep(100);
+                    
+                } catch (Exception e) {
+                    failCount++;
+                    System.out.println("❌ 更新股票异常：" + stock.getStockCode() + " - " + e.getMessage());
+                }
+            }
+            
+            System.out.println("定时任务完成：成功更新 " + successCount + " 只股票，失败 " + failCount + " 只股票");
+            System.out.println("完成时间：" + DATE_FORMAT.format(new java.util.Date()));
+            
+        } catch (Exception e) {
+            System.err.println("定时任务执行失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 构建股票WatchList对象
+     * 使用最新报告期的数据构建StockWatchlist对象并保存到数据库
+     * 
+     * @param symbol 股票代码
+     * @param stockName 股票名称
+     * @return 构建结果
+     */
+    public boolean buildWatchList(String symbol, String stockName) {
+        try {
+            // 判断是A股还是港股（A股6位数字，港股5位数字）
+            boolean isHkStock = symbol.length() == 5;
+            
+            if (isHkStock) {
+                // 港股处理
+                return buildHkWatchList(symbol, stockName);
+            } else {
+                // A股处理
+                return buildAShareWatchList(symbol, stockName);
+            }
+        } catch (Exception e) {
+            System.err.println("构建WatchList失败: " + symbol + " - " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 构建A股WatchList对象
+     */
+    private boolean buildAShareWatchList(String symbol, String stockName) {
+        try {
+            // 获取财务数据
+            Map<String, Object> financialData = stockFinancialDataService.getStockFinancialDataByPeriod(symbol);
+            @SuppressWarnings("unchecked")
+            Map<String, Map<String, Object>> periodData = (Map<String, Map<String, Object>>) financialData.get("periodData");
+
+            if (periodData == null || periodData.isEmpty()) {
+                System.err.println("未找到该A股的财务数据: " + symbol);
+                return false;
+            }
+
+            // 获取市盈率数据
+            List<StockValuationData> valuationDataList = akShareService.getStockValuationData(symbol);
+            
+            // 构建StockWatchlist对象
+            StockWatchlist stockWatchlist = buildStockWatchlistFromData(symbol, stockName, periodData, valuationDataList);
+            
+            if (stockWatchlist != null) {
+                // 保存到数据库
+                return saveStockWatchlist(stockWatchlist);
+            }
+            
+            return false;
+        } catch (Exception e) {
+            System.err.println("构建A股WatchList失败: " + symbol + " - " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 构建港股WatchList对象
+     */
+    private boolean buildHkWatchList(String stock, String stockName) {
+        try {
+            // 获取港股财务数据
+            List<StockFinancialHkBalanceSheet> balanceSheets = akShareService.getStockFinancialHkBalanceSheet(stock);
+            List<StockFinancialHkIncomeStatement> incomeStatements = akShareService.getStockFinancialHkIncomeStatement(stock);
+            List<StockFinancialHkCashFlow> cashFlows = akShareService.getStockFinancialHkCashFlow(stock);
+
+            if (balanceSheets.isEmpty()) {
+                System.err.println("未找到该港股的财务数据: " + stock);
+                return false;
+            }
+
+            // 按报告期组织数据
+            Map<String, Map<String, Object>> periodData = new TreeMap<>(Collections.reverseOrder());
+
+            // 处理资产负债表数据
+            for (StockFinancialHkBalanceSheet balanceSheet : balanceSheets) {
+                String reportPeriod = balanceSheet.getReportPeriod();
+                if (reportPeriod != null && !reportPeriod.trim().isEmpty()) {
+                    if (!periodData.containsKey(reportPeriod)) {
+                        periodData.put(reportPeriod, new HashMap<>());
+                    }
+                    periodData.get(reportPeriod).put("balanceSheet", balanceSheet);
+                }
+            }
+
+            // 处理利润表数据
+            for (StockFinancialHkIncomeStatement incomeStatement : incomeStatements) {
+                String reportPeriod = incomeStatement.getReportPeriod();
+                if (reportPeriod != null && !reportPeriod.trim().isEmpty()) {
+                    if (periodData.containsKey(reportPeriod)) {
+                        periodData.get(reportPeriod).put("incomeStatement", incomeStatement);
+                    }
+                }
+            }
+
+            // 处理现金流量表数据
+            for (StockFinancialHkCashFlow cashFlow : cashFlows) {
+                String reportPeriod = cashFlow.getReportPeriod();
+                if (reportPeriod != null && !reportPeriod.trim().isEmpty()) {
+                    if (periodData.containsKey(reportPeriod)) {
+                        periodData.get(reportPeriod).put("cashFlow", cashFlow);
+                    }
+                }
+            }
+
+            // 构建StockWatchlist对象
+            StockWatchlist stockWatchlist = buildHkStockWatchlistFromData(stock, stockName, periodData);
+            
+            if (stockWatchlist != null) {
+                // 保存到数据库
+                return saveStockWatchlist(stockWatchlist);
+            }
+            
+            return false;
+        } catch (Exception e) {
+            System.err.println("构建港股WatchList失败: " + stock + " - " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 从财务数据构建StockWatchlist对象
+     * 
+     * @param symbol 股票代码
+     * @param stockName 股票名称
+     * @param periodData 财务数据
+     * @param valuationDataList 市盈率数据
+     * @return StockWatchlist对象
+     */
+    private StockWatchlist buildStockWatchlistFromData(String symbol, String stockName, 
+                                                      Map<String, Map<String, Object>> periodData,
+                                                      List<StockValuationData> valuationDataList) {
+        try {
+            // 获取最新报告期的数据
+            String latestPeriod = periodData.keySet().iterator().next(); // 由于使用TreeMap倒序，第一个就是最新的
+            Map<String, Object> latestData = periodData.get(latestPeriod);
+            
+            if (latestData == null) {
+                return null;
+            }
+            
+            StockFinancialDebtThs latestBalanceSheet = (StockFinancialDebtThs) latestData.get("balanceSheet");
+            StockFinancialBenefitThs latestIncomeStatement = (StockFinancialBenefitThs) latestData.get("incomeStatement");
+            
+            if (latestBalanceSheet == null || latestIncomeStatement == null) {
+                return null;
+            }
+            
+            // 构建StockWatchlist对象
+            StockWatchlist stockWatchlist = new StockWatchlist();
+            stockWatchlist.setStockCode(symbol);
+            stockWatchlist.setStockName(stockName);
+            stockWatchlist.setStockType(0); // 默认类型为0，后续业务逻辑会设置
+            
+            // 设置财务指标（使用最新报告期数据）
+            setASharePeTtm(stockWatchlist, valuationDataList);
+            setAShareRoe(stockWatchlist, symbol);
+            setAShareProfitQuality(stockWatchlist, periodData);
+            
+            // 优化：只计算最新报告期的资产比率，而不是所有报告期
+            Map<String, Map<String, Double>> assetRatios = calculateLatestAssetRatios(latestPeriod, latestBalanceSheet);
+            setAShareAssetsQuality(stockWatchlist, assetRatios, latestPeriod);
+            
+            setASharePeScore(stockWatchlist, valuationDataList);
+            
+            // 优化：使用StringBuilder减少字符串拼接开销
+            StringBuilder logMessage = new StringBuilder();
+            logMessage.append("构建StockWatchlist对象: ").append(symbol).append(" - ").append(stockName)
+                     .append(", peTtm: ").append(stockWatchlist.getPeTtm())
+                     .append(", roe: ").append(stockWatchlist.getRoe())
+                     .append(", profitQuality: ").append(stockWatchlist.getProfitQuality())
+                     .append(", assetsQuality: ").append(stockWatchlist.getAssetsQuality())
+                     .append(", peScore: ").append(stockWatchlist.getPeScore());
+            System.out.println(logMessage.toString());
+            
+            return stockWatchlist;
+        } catch (Exception e) {
+            System.err.println("构建StockWatchlist对象失败: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 从港股财务数据构建StockWatchlist对象
+     * 
+     * @param stock 港股代码
+     * @param stockName 股票名称
+     * @param periodData 财务数据
+     * @return StockWatchlist对象
+     */
+    private StockWatchlist buildHkStockWatchlistFromData(String stock, String stockName, 
+                                                        Map<String, Map<String, Object>> periodData) {
+        try {
+            // 获取最新报告期的数据
+            String latestPeriod = periodData.keySet().iterator().next(); // 由于使用TreeMap倒序，第一个就是最新的
+            Map<String, Object> latestData = periodData.get(latestPeriod);
+            
+            if (latestData == null) {
+                return null;
+            }
+            
+            StockFinancialHkBalanceSheet latestBalanceSheet = (StockFinancialHkBalanceSheet) latestData.get("balanceSheet");
+            StockFinancialHkIncomeStatement latestIncomeStatement = (StockFinancialHkIncomeStatement) latestData.get("incomeStatement");
+            StockFinancialHkCashFlow latestCashFlow = (StockFinancialHkCashFlow) latestData.get("cashFlow");
+            
+            if (latestBalanceSheet == null || latestIncomeStatement == null) {
+                return null;
+            }
+            
+            // 构建StockWatchlist对象
+            StockWatchlist stockWatchlist = new StockWatchlist();
+            stockWatchlist.setStockCode(stock);
+            stockWatchlist.setStockName(stockName);
+            stockWatchlist.setStockType(0); // 默认类型为0，后续业务逻辑会设置
+            
+            // 设置港股财务指标（使用最新报告期数据）
+            setHkPeTtm(stockWatchlist, stock);
+            setHkRoe(stockWatchlist, latestIncomeStatement, latestBalanceSheet);
+            setHkProfitQuality(stockWatchlist, periodData);
+            
+            // 计算港股资产质量得分需要的资产比率
+            Map<String, Map<String, Double>> assetRatios = calculateHkAssetRatios(periodData);
+            setHkAssetsQuality(stockWatchlist, periodData, assetRatios);
+            
+            setHkPeScore(stockWatchlist, stock);
+            
+            // 优化：使用StringBuilder减少字符串拼接开销
+            StringBuilder logMessage = new StringBuilder();
+            logMessage.append("构建港股StockWatchlist对象: ").append(stock).append(" - ").append(stockName)
+                     .append(", peTtm: ").append(stockWatchlist.getPeTtm())
+                     .append(", roe: ").append(stockWatchlist.getRoe())
+                     .append(", profitQuality: ").append(stockWatchlist.getProfitQuality())
+                     .append(", assetsQuality: ").append(stockWatchlist.getAssetsQuality())
+                     .append(", peScore: ").append(stockWatchlist.getPeScore());
+            System.out.println(logMessage.toString());
+            
+            return stockWatchlist;
+        } catch (Exception e) {
+            System.err.println("构建港股StockWatchlist对象失败: " + e.getMessage());
+            return null;
+        }
+    }
+
+    // 优化：使用静态的日期格式化器，避免重复创建
+    private static final java.text.SimpleDateFormat DATE_FORMAT = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    
+    /**
+     * 保存StockWatchlist对象到数据库
+     * 
+     * @param stockWatchlist StockWatchlist对象
+     * @return 保存是否成功
+     */
+    private boolean saveStockWatchlist(StockWatchlist stockWatchlist) {
+        try {
+            // 优化：使用静态格式化器，避免重复创建
+            String currentTime = DATE_FORMAT.format(new java.util.Date());
+            
+            // 检查是否已存在
+            StockWatchlist existingStock = stockWatchlistService.getStockByCode(stockWatchlist.getStockCode());
+            if (existingStock != null) {
+                // 更新：保持原有StockType不变
+                stockWatchlist.setStockType(existingStock.getStockType());
+                stockWatchlist.setId(existingStock.getId());
+                stockWatchlist.setCreatedTime(existingStock.getCreatedTime());
+                stockWatchlist.setUpdatedTime(currentTime);
+                
+                stockWatchlistService.updateStock(stockWatchlist);
+                System.out.println("更新StockWatchlist成功: " + stockWatchlist.getStockCode() + ", 保持原有类型: " + existingStock.getStockType());
+            } else {
+                // 新增：StockType设为0
+                stockWatchlist.setStockType(0);
+                stockWatchlist.setCreatedTime(currentTime);
+                stockWatchlist.setUpdatedTime(currentTime);
+                
+                stockWatchlistService.addStock(stockWatchlist);
+                System.out.println("新增StockWatchlist成功: " + stockWatchlist.getStockCode() + ", 类型设为: 0");
+            }
+            return true;
+        } catch (Exception e) {
+            System.err.println("保存StockWatchlist失败: " + stockWatchlist.getStockCode() + " - " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 计算最新报告期的资产比率数据（优化版本）
+     * 
+     * @param latestPeriod 最新报告期
+     * @param debt 资产负债表数据
+     * @return 资产比率数据
+     */
+    private Map<String, Map<String, Double>> calculateLatestAssetRatios(String latestPeriod, StockFinancialDebtThs debt) {
+        // 预分配容量，减少动态扩容
+        Map<String, Map<String, Double>> assetRatios = new TreeMap<>(Collections.reverseOrder());
+        Map<String, Double> assetRatioMap = new HashMap<>(16); // 预分配16个元素的容量
+
+        // 解析基础数据（缓存解析结果，避免重复计算）
+        double totalAssets = parseFinancialValue(debt.getAssetTotal());
+        if (totalAssets <= 0) {
+            // 总资产为0或负数，返回空结果
+            assetRatios.put(latestPeriod, assetRatioMap);
+            return assetRatios;
+        }
+        
+        double totalDebt = parseFinancialValue(debt.getDebtTotal());
+        double currentAssets = parseFinancialValue(debt.getCurrentAssetsTotal());
+        double cash = parseFinancialValue(debt.getCash());
+        double lendingFunds = parseFinancialValue(debt.getLendingFunds());
+        double inventory = parseFinancialValue(debt.getInventory());
+        double fixedAssets = parseFinancialValue(debt.getFixedAssetsTotal());
+        double constructionInProgress = parseFinancialValue(debt.getConstructionInProgressTotal());
+        double projectMaterials = parseFinancialValue(debt.getProjectMaterials());
+        double goodwill = parseFinancialValue(debt.getGoodwill());
+        double intangibleAssets = parseFinancialValue(debt.getIntangibleAssets());
+        double longTermEquityInvestments = parseFinancialValue(debt.getLongTermEquityInvestments());
+        double otherEquityInvestments = parseFinancialValue(debt.getOtherEquityInvestments());
+        double investmentProperty = parseFinancialValue(debt.getInvestmentProperty());
+        double receivables = parseFinancialValue(debt.getReceivables());
+        double prepayments = parseFinancialValue(debt.getPrepayments());
+        double totalCash = parseFinancialValue(debt.getTotalCash());
+        double tradingFinancialAssets = parseFinancialValue(debt.getTradingFinancialAssets());
+        double availableForSaleFinancialAssets = parseFinancialValue(debt.getAvailableForSaleFinancialAssets());
+        double heldToMaturityInvestments = parseFinancialValue(debt.getHeldToMaturityInvestments());
+        double otherNonCurrentFinancialAssets = parseFinancialValue(debt.getOtherNonCurrentFinancialAssets());
+
+        // 优化：预计算常用值，减少重复计算
+        double cashAndLendingFunds = cash + lendingFunds;
+        double fixedAssetsTotal = fixedAssets + constructionInProgress + projectMaterials;
+        double receivablesAndPrepayments = receivables + prepayments;
+        double goodwillAndIntangible = goodwill + intangibleAssets;
+        double netCash = totalCash + lendingFunds - totalDebt;
+        double investmentAssets = tradingFinancialAssets + availableForSaleFinancialAssets + 
+                                 heldToMaturityInvestments + longTermEquityInvestments + 
+                                 otherEquityInvestments + otherNonCurrentFinancialAssets + investmentProperty;
+
+        // 资产结构分析（使用预计算的值）
+        assetRatioMap.put("货币资金（含拆出资金）占比", cashAndLendingFunds / totalAssets);
+        assetRatioMap.put("存货占比", inventory / totalAssets);
+        assetRatioMap.put("固定资产和在建工程占比", fixedAssetsTotal / totalAssets);
+        assetRatioMap.put("商誉占比", goodwill / totalAssets);
+        assetRatioMap.put("无形资产占比", intangibleAssets / totalAssets);
+        assetRatioMap.put("长期股权投资占比", longTermEquityInvestments / totalAssets);
+        assetRatioMap.put("其他权益工具投资占比", otherEquityInvestments / totalAssets);
+        assetRatioMap.put("投资性房地产占比", investmentProperty / totalAssets);
+        assetRatioMap.put("应收账款占比", receivables / totalAssets);
+        assetRatioMap.put("预付款项占比", prepayments / totalAssets);
+        assetRatioMap.put("流动资产占比", currentAssets / totalAssets);
+        
+        // 计算资产质量得分需要的比率
+        assetRatioMap.put("两应收一预付占比", receivablesAndPrepayments / totalAssets);
+        assetRatioMap.put("商誉和无形资产占比", goodwillAndIntangible / totalAssets);
+        
+        // 净现金比率 = 净现金 / 总资产
+        assetRatioMap.put("净现金比率", netCash / totalAssets);
+        
+        // 投资性资产占比
+        assetRatioMap.put("投资性资产占比", investmentAssets / totalAssets);
+
+        assetRatios.put(latestPeriod, assetRatioMap);
+        return assetRatios;
+    }
+
+    /**
+     * 计算资产比率数据（保留原方法以兼容其他调用）
+     * 
+     * @param periodData 财务数据
+     * @return 资产比率数据
+     */
+    private Map<String, Map<String, Double>> calculateAssetRatios(Map<String, Map<String, Object>> periodData) {
+        Map<String, Map<String, Double>> assetRatios = new TreeMap<>(Collections.reverseOrder());
+        
+        for (Map.Entry<String, Map<String, Object>> periodEntry : periodData.entrySet()) {
+            String period = periodEntry.getKey();
+            Map<String, Object> data = periodEntry.getValue();
+            StockFinancialDebtThs debt = (StockFinancialDebtThs) data.get("balanceSheet");
+            if (debt == null) continue;
+
+            // 解析基础数据
+            double totalAssets = parseFinancialValue(debt.getAssetTotal());
+            double totalDebt = parseFinancialValue(debt.getDebtTotal());
+            double currentAssets = parseFinancialValue(debt.getCurrentAssetsTotal());
+            double cash = parseFinancialValue(debt.getCash());
+            double lendingFunds = parseFinancialValue(debt.getLendingFunds());
+            double inventory = parseFinancialValue(debt.getInventory());
+            double fixedAssets = parseFinancialValue(debt.getFixedAssetsTotal());
+            double constructionInProgress = parseFinancialValue(debt.getConstructionInProgressTotal());
+            double projectMaterials = parseFinancialValue(debt.getProjectMaterials());
+            double goodwill = parseFinancialValue(debt.getGoodwill());
+            double intangibleAssets = parseFinancialValue(debt.getIntangibleAssets());
+            double longTermEquityInvestments = parseFinancialValue(debt.getLongTermEquityInvestments());
+            double otherEquityInvestments = parseFinancialValue(debt.getOtherEquityInvestments());
+            double investmentProperty = parseFinancialValue(debt.getInvestmentProperty());
+            double receivables = parseFinancialValue(debt.getReceivables());
+            double prepayments = parseFinancialValue(debt.getPrepayments());
+            double totalCash = parseFinancialValue(debt.getTotalCash());
+            double tradingFinancialAssets = parseFinancialValue(debt.getTradingFinancialAssets());
+            double availableForSaleFinancialAssets = parseFinancialValue(debt.getAvailableForSaleFinancialAssets());
+            double heldToMaturityInvestments = parseFinancialValue(debt.getHeldToMaturityInvestments());
+            double otherNonCurrentFinancialAssets = parseFinancialValue(debt.getOtherNonCurrentFinancialAssets());
+
+            // 资产结构分析
+            Map<String, Double> assetRatioMap = new HashMap<>();
+            assetRatioMap.put("货币资金（含拆出资金）占比", (cash + lendingFunds) / totalAssets);
+            assetRatioMap.put("存货占比", inventory / totalAssets);
+            assetRatioMap.put("固定资产和在建工程占比", (fixedAssets + constructionInProgress + projectMaterials) / totalAssets);
+            assetRatioMap.put("商誉占比", goodwill / totalAssets);
+            assetRatioMap.put("无形资产占比", intangibleAssets / totalAssets);
+            assetRatioMap.put("长期股权投资占比", longTermEquityInvestments / totalAssets);
+            assetRatioMap.put("其他权益工具投资占比", otherEquityInvestments / totalAssets);
+            assetRatioMap.put("投资性房地产占比", investmentProperty / totalAssets);
+            assetRatioMap.put("应收账款占比", receivables / totalAssets);
+            assetRatioMap.put("预付款项占比", prepayments / totalAssets);
+            assetRatioMap.put("流动资产占比", currentAssets / totalAssets);
+            
+            // 计算资产质量得分需要的比率
+            assetRatioMap.put("两应收一预付占比", (receivables + prepayments) / totalAssets);
+            assetRatioMap.put("商誉和无形资产占比", (goodwill + intangibleAssets) / totalAssets);
+            
+            // 净现金比率 = 净现金 / 总资产
+            Double netCashRatio = (totalCash + lendingFunds - totalDebt) / totalAssets;
+            assetRatioMap.put("净现金比率", netCashRatio);
+            
+            // 投资性资产占比
+            double touZiXingZiChan = tradingFinancialAssets
+                    + availableForSaleFinancialAssets
+                    + heldToMaturityInvestments
+                    + longTermEquityInvestments
+                    + otherEquityInvestments
+                    + otherNonCurrentFinancialAssets
+                    + investmentProperty;
+            assetRatioMap.put("投资性资产占比", touZiXingZiChan / totalAssets);
+
+            assetRatios.put(period, assetRatioMap);
+        }
+        
+        return assetRatios;
+    }
+
+    /**
+     * 计算港股资产比率数据
+     * 
+     * @param periodData 财务数据
+     * @return 资产比率数据
+     */
+    private Map<String, Map<String, Double>> calculateHkAssetRatios(Map<String, Map<String, Object>> periodData) {
+        Map<String, Map<String, Double>> assetRatios = new TreeMap<>(Collections.reverseOrder());
+        
+        for (Map.Entry<String, Map<String, Object>> periodEntry : periodData.entrySet()) {
+            String period = periodEntry.getKey();
+            Map<String, Object> data = periodEntry.getValue();
+            StockFinancialHkBalanceSheet balanceSheet = (StockFinancialHkBalanceSheet) data.get("balanceSheet");
+            if (balanceSheet == null) continue;
+
+            // 解析基础数据
+            double totalAssets = parseDoubleValue(balanceSheet.getZongZiChan());
+            if (totalAssets <= 0) continue;
+            
+            double inventory = parseDoubleValue(balanceSheet.getCunHuo());
+            double receivables = parseDoubleValue(balanceSheet.getYingShouZhangKuan());
+            double prepayments = parseDoubleValue(balanceSheet.getYuFuKuanXiang());
+            double goodwill = parseDoubleValue(balanceSheet.getShangYu());
+            double intangibleAssets = parseDoubleValue(balanceSheet.getWuXingZiChan());
+
+            // 资产结构分析
+            Map<String, Double> assetRatioMap = new HashMap<>();
+            assetRatioMap.put("存货", inventory / totalAssets);
+            assetRatioMap.put("商誉", goodwill / totalAssets);
+            assetRatioMap.put("无形资产", intangibleAssets / totalAssets);
+            assetRatioMap.put("两应收一预付", (receivables + prepayments) / totalAssets);
+
+            assetRatios.put(period, assetRatioMap);
+        }
+        
+        return assetRatios;
+    }
+
+    
+
+    // 解析财务数值，支持单位和异常处理（优化版本）
     private double parseFinancialValue(String value) {
-        if (value == null || value.trim().isEmpty()) {
+        if (value == null || value.isEmpty()) {
             return 0.0;
         }
+        
+        // 优化：直接trim，避免重复调用
         String cleanValue = value.trim();
-        if ("false".equalsIgnoreCase(cleanValue) || "true".equalsIgnoreCase(cleanValue)) {
-            return 0.0;
-        }
-        cleanValue = cleanValue.replaceAll("[^0-9.亿万千]", "");
         if (cleanValue.isEmpty()) {
             return 0.0;
         }
+        
+        // 优化：使用equals而不是equalsIgnoreCase，减少字符串操作
+        if ("false".equals(cleanValue) || "true".equals(cleanValue)) {
+            return 0.0;
+        }
+        
+        // 优化：使用更高效的字符串处理方式
+        StringBuilder numericPart = new StringBuilder();
+        char unit = 0;
+        
+        for (int i = 0; i < cleanValue.length(); i++) {
+            char c = cleanValue.charAt(i);
+            if (Character.isDigit(c) || c == '.') {
+                numericPart.append(c);
+            } else if (c == '万' || c == '亿' || c == '千') {
+                unit = c;
+                break;
+            }
+        }
+        
+        if (numericPart.length() == 0) {
+            return 0.0;
+        }
+        
         try {
-            if (cleanValue.contains("万亿")) {
-                String numStr = cleanValue.replace("万亿", "");
-                return Double.parseDouble(numStr) * 1000000000000L;
-            } else if (cleanValue.contains("亿")) {
-                String numStr = cleanValue.replace("亿", "");
-                return Double.parseDouble(numStr) * 100000000;
-            } else if (cleanValue.contains("万")) {
-                String numStr = cleanValue.replace("万", "");
-                return Double.parseDouble(numStr) * 10000;
-            } else if (cleanValue.contains("千")) {
-                String numStr = cleanValue.replace("千", "");
-                return Double.parseDouble(numStr) * 1000;
-            } else {
-                return Double.parseDouble(cleanValue);
+            double numValue = Double.parseDouble(numericPart.toString());
+            
+            if (unit == 0) {
+                return numValue;
+            }
+            
+            // 优化：使用switch而不是if-else链，直接使用char
+            switch (unit) {
+                case '万':
+                    return numValue * 10000;
+                case '亿':
+                    return numValue * 100000000;
+                case '千':
+                    return numValue * 1000;
+                default:
+                    return numValue;
             }
         } catch (NumberFormatException e) {
             return 0.0;

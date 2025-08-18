@@ -2240,6 +2240,18 @@
         }
 
         /**
+         * 格式化市盈率TTM，保留两位小数
+         */
+        function formatPeTtm(value) {
+            if (!value) return '-';
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+            
+            // 市盈率TTM始终保留两位小数
+            return num.toFixed(2);
+        }
+
+        /**
          * 格式化股本数据，专门用于总股本和流通股的显示
          */
         function formatShares(value) {
@@ -5865,7 +5877,7 @@
                         <td>${stock.stockCode}</td>
                         <td>${stock.stockName}</td>
                         <td><span class="stock-type-badge ${stockTypeClass}">${stockTypeText}</span></td>
-                        <td>${formatNumber(stock.peTtm)}</td>
+                        <td>${formatPeTtm(stock.peTtm)}</td>
                         <td>${formatNumber(stock.roe)}%</td>
                         <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>

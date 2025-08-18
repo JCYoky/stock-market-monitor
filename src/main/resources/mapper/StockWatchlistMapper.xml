@@ -73,6 +73,17 @@
         ORDER BY created_time DESC
     </select>
 
+    <!-- 根据多个股票类型查询 -->
+    <select id="selectByStockTypes" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM stock_watchlist
+        WHERE stock_type IN
+        <foreach collection="stockTypes" item="stockType" open="(" separator="," close=")">
+            #{stockType}
+        </foreach>
+        ORDER BY created_time DESC
+    </select>
+
     <!-- 获取所有股票代码 -->
     <select id="selectAllStockCodes" resultType="string">
         SELECT stock_code

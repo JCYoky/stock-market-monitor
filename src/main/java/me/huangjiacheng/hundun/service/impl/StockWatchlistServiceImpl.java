@@ -122,6 +122,16 @@ public class StockWatchlistServiceImpl implements StockWatchlistService {
     }
 
     @Override
+    public List<StockWatchlist> getStocksByTypes(List<Integer> stockTypes) {
+        try {
+            return stockWatchlistMapper.selectByStockTypes(stockTypes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
     public boolean removeFromWatchlist(String stockCode) {
         try {
             // 获取现有股票信息
