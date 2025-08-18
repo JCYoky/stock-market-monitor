@@ -13,10 +13,11 @@
         date, market_risk_ratio
     </sql>
     
-    <!-- 插入市危率数据 -->
+    <!-- 插入市危率数据，如果存在则覆盖 -->
     <insert id="insert" parameterType="me.huangjiacheng.hundun.model.MarketRiskRatio">
         INSERT INTO market_risk_ratio (date, market_risk_ratio)
         VALUES (#{date}, #{marketRiskRatio})
+        ON DUPLICATE KEY UPDATE market_risk_ratio = #{marketRiskRatio}
     </insert>
     
     <!-- 根据日期更新市危率数据 -->

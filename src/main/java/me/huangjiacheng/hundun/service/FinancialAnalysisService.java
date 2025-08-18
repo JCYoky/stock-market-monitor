@@ -38,6 +38,9 @@ public class FinancialAnalysisService {
     @Autowired
     private MarketRiskRatioMapper marketRiskRatioMapper;
 
+    @Autowired
+    private LoboDataService loboDataService;
+
     /**
      * 综合分析上市公司财务状况，包括负债结构和资产结构
      * 
@@ -1535,6 +1538,15 @@ public class FinancialAnalysisService {
     }
 
     /**
+     * 定时任务：工作日（周一到周五）下午5:30自动计算市危率
+     */
+    @Scheduled(cron = "0 30 17 * * MON-FRI")
+    public void scheduledCalculateMarketRiskRatio() {
+        System.out.println("定时任务启动：开始计算市危率...");
+        calculateAndSaveMarketRiskRatio();
+    }
+
+    /**
      * 计算并保存市危率数据（从数据库最新日期开始计算）
      */
     public void calculateAndSaveMarketRiskRatio() {
@@ -1544,12 +1556,13 @@ public class FinancialAnalysisService {
             // 获取数据库中最新的市危率数据日期
             String latestDate = getLatestMarketRiskRatioDate();
             if (latestDate == null) {
-                System.out.println("数据库中暂无市危率数据，将从2010-01-01开始计算");
-                latestDate = "2010-01-01";
+                System.out.println("数据库中暂无市危率数据，将从2005-01-01开始计算");
+                latestDate = "2005-01-01";
             } else {
                 // 检查某一只股票（000651）的市盈率最新的全部历史数据，如果最新数据在今天之前，证明今日的市盈率数据还未更新，则不必计算。
                 String stockCode = "000651";
                 List<StockValuationData> valuationDataList = akShareService.getStockValuationData(stockCode);
+                // List<StockValuationData> valuationDataList = loboDataService.batchGetStockValuationData(stockCode);
                 if (valuationDataList != null && !valuationDataList.isEmpty()) {
                     StockValuationData latestValuation = valuationDataList.get(valuationDataList.size() - 1);
                     if (latestValuation.getDate() != null && latestValuation.getDate().equals(getTodayDate())) {
@@ -1599,6 +1612,7 @@ public class FinancialAnalysisService {
                     
                     // 获取该股票的历史市盈率数据
                     List<StockValuationData> valuationDataList = akShareService.getStockValuationData(stockCode);
+                    // List<StockValuationData> valuationDataList = loboDataService.batchGetStockValuationData(stockCode);
                     if (valuationDataList != null && !valuationDataList.isEmpty()) {
                         // 处理每个日期的市盈率数据
                         for (StockValuationData valuation : valuationDataList) {
@@ -1737,30 +1751,16 @@ public class FinancialAnalysisService {
         try {
             System.out.println("准备保存 " + marketRiskRatios.size() + " 条市危率数据到数据库");
             
-            int successCount = 0;
-            int updateCount = 0;
+                    int successCount = 0;
             
             for (MarketRiskRatio ratio : marketRiskRatios) {
                 try {
-                    // 检查该日期是否已存在数据
-                    MarketRiskRatio existingRatio = marketRiskRatioMapper.selectByDate(ratio.getDate());
-                    
-                    if (existingRatio != null) {
-                        // 如果存在，则更新
-                        int updateResult = marketRiskRatioMapper.updateByDate(ratio);
-                        if (updateResult > 0) {
-                            updateCount++;
-                            System.out.println("更新市危率数据 - 日期: " + ratio.getDate() + 
-                                             ", 市危率: " + ratio.getMarketRiskRatio());
-                        }
-                    } else {
-                        // 如果不存在，则插入
-                        int insertResult = marketRiskRatioMapper.insert(ratio);
-                        if (insertResult > 0) {
-                            successCount++;
-                            System.out.println("插入市危率数据 - 日期: " + ratio.getDate() + 
-                                             ", 市危率: " + ratio.getMarketRiskRatio());
-                        }
+                    // 直接插入，如果存在则覆盖
+                    int insertResult = marketRiskRatioMapper.insert(ratio);
+                    if (insertResult > 0) {
+                        successCount++;
+                        System.out.println("保存市危率数据 - 日期: " + ratio.getDate() + 
+                                         ", 市危率: " + ratio.getMarketRiskRatio());
                     }
                 } catch (Exception e) {
                     System.err.println("保存日期 " + ratio.getDate() + " 的市危率数据时发生错误: " + e.getMessage());
@@ -1769,7 +1769,7 @@ public class FinancialAnalysisService {
             }
             
             System.out.println("市危率数据保存完成！");
-            System.out.println("新增: " + successCount + " 条, 更新: " + updateCount + " 条");
+            System.out.println("成功保存: " + successCount + " 条市危率数据");
             
         } catch (Exception e) {
             System.err.println("保存市危率数据到数据库时发生错误: " + e.getMessage());
@@ -1857,15 +1857,6 @@ public class FinancialAnalysisService {
             // 如果出错，返回一个默认日期
             return "2010-01-01";
         }
-    }
-
-    /**
-     * 定时任务：工作日（周一到周五）下午5:30自动计算市危率
-     */
-    @Scheduled(cron = "0 30 17 * * MON-FRI")
-    public void scheduledCalculateMarketRiskRatio() {
-        System.out.println("定时任务启动：开始计算市危率...");
-        calculateAndSaveMarketRiskRatio();
     }
 
     /**
