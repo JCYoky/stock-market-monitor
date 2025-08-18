@@ -1454,10 +1454,6 @@ public class FinancialAnalysisService {
                         
                         // 5. 市盈率得分：将历史市盈率数据从小到大排序，计算最新市盈率在排序后的位置百分比
                         setHkPeScore(stockWatchlist, stock);
-                        
-                        // TODO: 后续业务逻辑会完善其他字段的计算
-                        
-                        // 这里只是构建对象，具体的业务逻辑后续再实现
                         System.out.println("构建StockWatchlist对象: " + stock + " - " + stockName + ", peTtm: " + stockWatchlist.getPeTtm() + ", roe: " + stockWatchlist.getRoe() + ", profitQuality: " + stockWatchlist.getProfitQuality() + ", assetsQuality: " + stockWatchlist.getAssetsQuality() + ", peScore: " + stockWatchlist.getPeScore());
                         
                         // 保存StockWatchlist对象到数据库
@@ -2396,12 +2392,12 @@ public class FinancialAnalysisService {
             double minRatio = allRatios.get(0).getMarketRiskRatio();
             double maxRatio = allRatios.get(allRatios.size() - 1).getMarketRiskRatio();
             double range = maxRatio - minRatio;
-            double intervalSize = range / 1000.0;
+            double intervalSize = range / 100.0;
             
             // 统计每个区间的个数
-            int[] intervalCounts = new int[1000];
+            int[] intervalCounts = new int[100];
             for (MarketRiskRatio ratio : allRatios) {
-                int intervalIndex = (int) Math.min(999, Math.floor((ratio.getMarketRiskRatio() - minRatio) / intervalSize));
+                int intervalIndex = (int) Math.min(99, Math.floor((ratio.getMarketRiskRatio() - minRatio) / intervalSize));
                 intervalCounts[intervalIndex]++;
             }
             
