@@ -899,6 +899,122 @@ public class FinancialAnalysisService {
         return assetRatios;
     }
 
+    /**
+     * 分析股票历史市盈率分布
+     * 将历史市盈率数据分割成100个区间，统计每个区间的天数
+     * 
+     * @param symbol 股票代码
+     * @return 市盈率分布分析结果
+     */
+    public Map<String, Object> analyzePeDistribution(String symbol) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("symbol", symbol);
+        
+        try {
+            // 获取股票历史市盈率数据
+            List<StockValuationData> valuationDataList = null;
+            
+            // 判断是A股还是港股
+            if (symbol.length() == 5) {
+                // 港股
+                valuationDataList = akShareService.getStockHkHistValuation(symbol);
+            } else {
+                // A股
+                valuationDataList = akShareService.getStockValuationData(symbol);
+            }
+            
+            if (valuationDataList == null || valuationDataList.isEmpty()) {
+                result.put("success", false);
+                result.put("message", "未找到该股票的市盈率数据");
+                return result;
+            }
+            
+            // 提取有效的市盈率数据
+            List<Double> validPeValues = new ArrayList<>();
+            Double latestPeValue = null;
+            String latestDate = null;
+            
+            for (StockValuationData valuation : valuationDataList) {
+                if (valuation.getValue() != null && !valuation.getValue().trim().isEmpty()) {
+                    try {
+                        double peValue = Double.parseDouble(valuation.getValue());
+                        if (peValue > 0 && peValue < Double.MAX_VALUE) { // 排除负数和无穷大
+                            validPeValues.add(peValue);
+                            
+                            // 记录最新的市盈率值
+                            if (latestDate == null || (valuation.getDate() != null && 
+                                valuation.getDate().compareTo(latestDate) > 0)) {
+                                latestPeValue = peValue;
+                                latestDate = valuation.getDate();
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
+                }
+            }
+            
+            if (validPeValues.isEmpty()) {
+                result.put("success", false);
+                result.put("message", "没有有效的市盈率数据");
+                return result;
+            }
+            
+            // 计算市盈率范围
+            double minPe = validPeValues.stream().mapToDouble(Double::doubleValue).min().orElse(0);
+            double maxPe = validPeValues.stream().mapToDouble(Double::doubleValue).max().orElse(0);
+            
+            // 分割成100个区间
+            int intervalCount = 100;
+            double intervalSize = (maxPe - minPe) / intervalCount;
+            
+            // 统计每个区间的天数
+            int[] intervalCounts = new int[intervalCount];
+            int latestPeIntervalIndex = -1;
+            
+            for (Double peValue : validPeValues) {
+                int intervalIndex = (int) Math.min((peValue - minPe) / intervalSize, intervalCount - 1);
+                intervalCounts[intervalIndex]++;
+            }
+            
+            // 找到最新市盈率所在的区间
+            if (latestPeValue != null) {
+                latestPeIntervalIndex = (int) Math.min((latestPeValue - minPe) / intervalSize, intervalCount - 1);
+            }
+            
+            // 构建区间数据
+            List<Map<String, Object>> intervals = new ArrayList<>();
+            for (int i = 0; i < intervalCount; i++) {
+                double intervalStart = minPe + i * intervalSize;
+                double intervalEnd = minPe + (i + 1) * intervalSize;
+                
+                Map<String, Object> interval = new HashMap<>();
+                interval.put("index", i);
+                interval.put("start", Math.round(intervalStart * 100.0) / 100.0);
+                interval.put("end", Math.round(intervalEnd * 100.0) / 100.0);
+                interval.put("count", intervalCounts[i]);
+                interval.put("isLatest", i == latestPeIntervalIndex);
+                
+                intervals.add(interval);
+            }
+            
+            result.put("success", true);
+            result.put("intervals", intervals);
+            result.put("totalDays", validPeValues.size());
+            result.put("minPe", Math.round(minPe * 100.0) / 100.0);
+            result.put("maxPe", Math.round(maxPe * 100.0) / 100.0);
+            result.put("latestPe", latestPeValue != null ? Math.round(latestPeValue * 100.0) / 100.0 : null);
+            result.put("latestDate", latestDate);
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "分析市盈率分布时发生错误: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return result;
+    }
+
     
 
     // 解析财务数值，支持单位和异常处理（优化版本）
@@ -2077,8 +2193,6 @@ public class FinancialAnalysisService {
                 // List<StockValuationData> valuationDataList = loboDataService.batchGetStockValuationData(stockCode);
                 if (valuationDataList != null && !valuationDataList.isEmpty()) {
                     StockValuationData latestValuation = valuationDataList.get(valuationDataList.size() - 1);
-                    System.out.println("latestValuation.getDate(): " + latestValuation.getDate());
-                    
                     // 标准化日期格式进行比较
                     String normalizedLatestDate = normalizeDate(latestValuation.getDate());
                     if (normalizedLatestDate != null && normalizedLatestDate.equals(todayDate)) {

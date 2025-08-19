@@ -398,4 +398,34 @@ public class AnalysisApiController {
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * 分析股票历史市盈率分布
+     * @param symbol 股票代码
+     * @return 市盈率分布分析结果
+     */
+    @GetMapping("/pe-distribution")
+    public ResponseEntity<Map<String, Object>> getPeDistribution(@RequestParam String symbol) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            Map<String, Object> distribution = zxmFinancialAnalysisService.analyzePeDistribution(symbol);
+            
+            if (distribution != null && (Boolean) distribution.get("success")) {
+                result.put("success", true);
+                result.put("data", distribution);
+                result.put("message", "获取市盈率分布分析成功");
+            } else {
+                result.put("success", false);
+                result.put("message", distribution != null ? (String) distribution.get("message") : "分析失败");
+            }
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "分析市盈率分布失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+
 } 

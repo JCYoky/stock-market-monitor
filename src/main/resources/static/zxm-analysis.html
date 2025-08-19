@@ -2438,6 +2438,13 @@
                     <div id="valuationChart" class="chart"></div>
                 </div>`;
                 chartHtml += `</div>`;
+                
+                // 市盈率分布图表
+                chartHtml += `<div class="chart-row">`;
+                chartHtml += `<div class="chart-wrapper">
+                    <div id="peDistributionChart" class="chart"></div>
+                </div>`;
+                chartHtml += `</div>`;
             }
 
             // 第六行：换手率分布数据
@@ -3982,6 +3989,184 @@
             // 获取股票代码，如果没有则使用默认值
             const symbol = valuationData[0] && valuationData[0].symbol ? valuationData[0].symbol : '股票';
             createChart('valuationChart', `${symbol} 历史市盈率(TTM)趋势`, dates, series, false);
+            
+            // 获取市盈率分布数据并显示
+            if (symbol && symbol !== '股票') {
+                fetchPeDistributionData(symbol);
+            }
+        }
+        
+        /**
+         * 获取市盈率分布数据
+         */
+        function fetchPeDistributionData(symbol) {
+            fetch(`/api/zxm/pe-distribution?symbol=${symbol}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayPeDistributionChart(data.data);
+                    } else {
+                        console.warn('获取市盈率分布数据失败:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('请求市盈率分布数据失败:', error);
+                });
+        }
+        
+        /**
+         * 显示市盈率分布图表
+         */
+        function displayPeDistributionChart(distributionData) {
+            if (!distributionData || !distributionData.success) {
+                console.warn('市盈率分布数据为空');
+                return;
+            }
+
+            const intervals = distributionData.intervals;
+            const totalDays = distributionData.totalDays;
+            const minPe = distributionData.minPe;
+            const maxPe = distributionData.maxPe;
+            const latestPe = distributionData.latestPe;
+            const latestDate = distributionData.latestDate;
+            const symbol = distributionData.symbol;
+
+            // 准备柱状图数据
+            const data = [];
+            const xAxisData = [];
+            
+            for (let i = 0; i < intervals.length; i++) {
+                const interval = intervals[i];
+                data.push({
+                    value: interval.count,
+                    itemStyle: {
+                        color: interval.isLatest ? '#e74c3c' : '#3498db' // 最新区间标记为红色
+                    }
+                });
+                xAxisData.push(`${interval.start}-${interval.end}`);
+            }
+
+            // 创建柱状图
+            const chart = echarts.init(document.getElementById('peDistributionChart'));
+            window.peDistributionChart = chart;
+
+            const option = {
+                title: {
+                    text: `${symbol} 历史市盈率分布分析`,
+                    left: 'center',
+                    top: 16,
+                    textStyle: {
+                        fontSize: 18,
+                        fontWeight: '600',
+                        color: '#1f2937',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                    borderColor: '#e5e7eb',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                    textStyle: { color: '#374151', fontSize: 13 },
+                    confine: false,
+                    appendToBody: true,
+                    enterable: true,
+                    hideDelay: 100,
+                    axisPointer: {
+                        type: 'shadow',
+                        shadowStyle: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    formatter: function (params) {
+                        const dataIndex = params[0].dataIndex;
+                        const count = params[0].value;
+                        const interval = intervals[dataIndex];
+                        let tooltipText = `<div style="padding: 8px;">
+                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 8px; font-size: 14px;">市盈率区间: ${interval.start}-${interval.end}</div>
+                            <div style="color: #6b7280; font-size: 13px;">天数: <span style="font-weight: 600; color: #1f2937;">${count}</span></div>`;
+
+                        if (interval.isLatest) {
+                            tooltipText += `<div style="color: #ef4444; font-size: 13px; margin-top: 4px;">
+                                最新市盈率: <span style="font-weight: 600;">${latestPe}</span><br/>
+                                <span style="font-size: 12px;">(${latestDate})</span>
+                            </div>`;
+                        }
+
+                        tooltipText += '</div>';
+                        return tooltipText;
+                    }
+                },
+                grid: {
+                    left: '6%',
+                    right: '6%',
+                    bottom: '18%',
+                    top: '22%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: xAxisData,
+                    axisLabel: {
+                        fontSize: 11,
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        rotate: 45,
+                        interval: Math.ceil(xAxisData.length / 20) // 只显示部分标签，避免重叠
+                    },
+                    axisTick: {
+                        alignWithLabel: true
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '天数',
+                    nameTextStyle: {
+                        color: '#6b7280',
+                        fontSize: 12
+                    },
+                    axisLabel: {
+                        color: '#6b7280',
+                        fontSize: 11
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#e5e7eb',
+                            type: 'dashed'
+                        }
+                    }
+                },
+                series: [{
+                    name: '天数',
+                    type: 'bar',
+                    data: data,
+                    barWidth: '80%',
+                    itemStyle: {
+                        borderRadius: [4, 4, 0, 0]
+                    }
+                }],
+                dataZoom: [{
+                    type: 'slider',
+                    show: true,
+                    xAxisIndex: [0],
+                    start: 0,
+                    end: 100,
+                    bottom: 10
+                }]
+            };
+
+            chart.setOption(option);
+            
+            // 添加图表说明
+            const chartContainer = document.getElementById('peDistributionChart');
+            if (chartContainer) {
+                const infoDiv = document.createElement('div');
+                infoDiv.style.cssText = 'text-align: center; margin-top: 10px; color: #6b7280; font-size: 12px;';
+                infoDiv.innerHTML = `总天数: ${totalDays} | 市盈率范围: ${minPe} - ${maxPe} | 最新市盈率: ${latestPe} (${latestDate})`;
+                chartContainer.appendChild(infoDiv);
+            }
         }
 
         function displayTurnoverDistributionChart(turnoverDistributionData) {
