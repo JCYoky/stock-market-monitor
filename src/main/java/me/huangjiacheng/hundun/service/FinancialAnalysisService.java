@@ -1530,7 +1530,7 @@ public class FinancialAnalysisService {
                 System.err.println("获取港股市盈率历史数据失败: " + e.getMessage());
                 result.put("peAnalysis", null);
             }
-            
+
             result.put("debtAnalysis", debtAnalysis);
             result.put("assetAnalysis", assetAnalysis);
             result.put("profitDataAnalysis", profitDataAnalysis);
