@@ -1652,6 +1652,7 @@
                             <th>利润质量</th>
                             <th>资产质量</th>
                             <th>市盈率得分</th>
+                            <th>更新时间</th>
                             <th style="width: 140px;">操作</th>
                         </tr>
                     </thead>
@@ -1948,10 +1949,11 @@
             Promise.allSettled([
                 fetch(`http://localhost:8888/api/zxm/hk-financial-analysis?stock=${encodeURIComponent(stock)}&stockName=${encodeURIComponent(stockName)}`),
                 fetch(`http://localhost:8888/api/zxm/hk-basic-info?stock=${encodeURIComponent(stock)}`),
-                fetch(`http://localhost:8888/api/zxm/hk-turnover-distribution?stock=${encodeURIComponent(stock)}`)
+                fetch(`http://localhost:8888/api/zxm/hk-turnover-distribution?stock=${encodeURIComponent(stock)}`),
+                fetch(`http://localhost:8888/api/zxm/pe-distribution?symbol=${encodeURIComponent(stock)}`)
             ])
                 .then(results => {
-                    const [analysisResult, basicInfoResult, turnoverDistributionResult] = results;
+                    const [analysisResult, basicInfoResult, turnoverDistributionResult, peDistributionResult] = results;
 
                     completeLoading();
                     document.getElementById('analyzeBtn').disabled = false;
@@ -1975,8 +1977,9 @@
                             if (analysisData.success) {
                                 displayHkAllCharts(analysisData.debtAnalysis, analysisData.assetAnalysis, analysisData.profitDataAnalysis, analysisData.profitRatioAnalysis, analysisData.financialRatioAnalysis, analysisData.cashFlowAnalysis, analysisData.peAnalysis);
 
-                                // 在图表容器创建后，显示换手率分布图表
+                                // 在图表容器创建后，显示换手率分布图表和市盈率分布图表
                                 setTimeout(() => {
+                                    // 显示换手率分布图表
                                     if (turnoverDistributionResult.status === 'fulfilled' && turnoverDistributionResult.value.ok) {
                                         turnoverDistributionResult.value.json().then(turnoverData => {
                                             if (turnoverData.success) {
@@ -1989,6 +1992,21 @@
                                         });
                                     } else {
                                         console.warn('港股换手率分布数据获取失败:', turnoverDistributionResult.reason || '网络错误');
+                                    }
+                                    
+                                    // 显示市盈率分布图表
+                                    if (peDistributionResult.status === 'fulfilled' && peDistributionResult.value.ok) {
+                                        peDistributionResult.value.json().then(peData => {
+                                            if (peData.success) {
+                                                displayHkPeDistributionChart(peData.data);
+                                            } else {
+                                                console.warn('港股市盈率分布数据获取失败:', peData.message);
+                                            }
+                                        }).catch(error => {
+                                            console.warn('港股市盈率分布数据解析失败:', error);
+                                        });
+                                    } else {
+                                        console.warn('港股市盈率分布数据获取失败:', peDistributionResult.reason || '网络错误');
                                     }
                                 }, 100); // 延迟100ms确保容器已创建
                             } else {
@@ -2056,11 +2074,20 @@
                     if (stockInfo && stockInfo.code) {
                         // 从财务分析数据中获取最新报告期
                         let latestReportPeriod = '-';
-                        if (analysisData && analysisData.success && analysisData.periodData) {
-                            const periods = Object.keys(analysisData.periodData);
-                            if (periods.length > 0) {
-                                // 获取最新的报告期
-                                latestReportPeriod = periods[0]; // 由于periodData是TreeMap倒序，第一个就是最新的
+                        if (analysisData && analysisData.success) {
+                            // 尝试从负债结构数据中获取最新时间
+                            if (analysisData.debtAnalysis && analysisData.debtAnalysis.yearlyRatios) {
+                                const periods = Object.keys(analysisData.debtAnalysis.yearlyRatios);
+                                if (periods.length > 0) {
+                                    latestReportPeriod = periods[0]; // 由于yearlyRatios是TreeMap倒序，第一个就是最新的
+                                }
+                            }
+                            // 如果负债结构没有，尝试从资产结构获取
+                            else if (analysisData.assetAnalysis && analysisData.assetAnalysis.yearlyRatios) {
+                                const periods = Object.keys(analysisData.assetAnalysis.yearlyRatios);
+                                if (periods.length > 0) {
+                                    latestReportPeriod = periods[0];
+                                }
                             }
                         }
                         displayStockInfo(stockInfo, latestReportPeriod);
@@ -4471,6 +4498,13 @@
             </div>`;
             chartHtml += `</div>`;
             
+            // 第五行：港股市盈率分布图表
+            chartHtml += `<div class="chart-row">`;
+            chartHtml += `<div class="chart-wrapper">
+                <div id="hkPeDistributionChart" class="chart"></div>
+            </div>`;
+            chartHtml += `</div>`;
+            
             // 第五行：港股市盈率历史走势图
             if (peData && peData.dates && peData.values && peData.dates.length > 0) {
                 chartHtml += `<div class="chart-row">`;
@@ -6005,7 +6039,7 @@
         function loadWatchlistData() {
             // 显示加载状态
             const tableBody = document.getElementById('watchlistTableBody');
-            tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">正在加载自选股数据...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">正在加载自选股数据...</td></tr>';
             
             // 调用后端API获取自选股数据
             fetch('/api/watchlist/all')
@@ -6017,9 +6051,10 @@
                 })
                 .then(data => {
                     if (data.success && data.data) {
+                        console.log('自选股数据:', data.data); // 调试信息
                         displayWatchlistData(data.data);
                     } else {
-                        tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + (data.message || '未知错误') + '</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + (data.message || '未知错误') + '</td></tr>';
                     }
                 })
                 .catch(error => {
@@ -6036,8 +6071,14 @@
             const tableBody = document.getElementById('watchlistTableBody');
             
             if (!watchlistData || watchlistData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">暂无自选股数据</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">暂无自选股数据</td></tr>';
                 return;
+            }
+            
+            // 调试信息：查看第一条数据的字段
+            if (watchlistData.length > 0) {
+                console.log('第一条自选股数据:', watchlistData[0]);
+                console.log('updatedTime字段:', watchlistData[0].updatedTime);
             }
             
             // 保存原始数据
@@ -6047,7 +6088,7 @@
             const filteredData = filterDataByType(watchlistData, currentTypeFilter);
             
             if (filteredData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">暂无符合条件的数据</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">暂无符合条件的数据</td></tr>';
                 return;
             }
             
@@ -6073,6 +6114,7 @@
                         <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.peScore)}</td>
+                        <td>${stock.updatedTime ? stock.updatedTime.substring(0, 10) : '-'}</td>
                         <td>
                             <button class="detail-btn" onclick="analyzeStockFromWatchlist('${stock.stockCode}', '${stock.stockName}')">
                                 查看详情
@@ -6086,8 +6128,155 @@
             });
             
             tableBody.innerHTML = html;
-        }
+                }
+        
+        /**
+         * 显示港股市盈率分布图表
+         */
+        function displayHkPeDistributionChart(distributionData) {
+            if (!distributionData || !distributionData.success) {
+                console.warn('港股市盈率分布数据为空');
+                return;
+            }
 
+            const intervals = distributionData.intervals;
+            const totalDays = distributionData.totalDays;
+            const minPe = distributionData.minPe;
+            const maxPe = distributionData.maxPe;
+            const latestPe = distributionData.latestPe;
+            const latestDate = distributionData.latestDate;
+            const symbol = distributionData.symbol;
+
+            // 准备柱状图数据
+            const data = [];
+            const xAxisData = [];
+            
+            for (let i = 0; i < intervals.length; i++) {
+                const interval = intervals[i];
+                data.push({
+                    value: interval.count,
+                    itemStyle: {
+                        color: interval.isLatest ? '#e74c3c' : '#3498db' // 最新区间标记为红色
+                    }
+                });
+                xAxisData.push(`${interval.start}-${interval.end}`);
+            }
+
+            // 创建柱状图
+            const chart = echarts.init(document.getElementById('hkPeDistributionChart'));
+            window.hkPeDistributionChart = chart;
+
+            const option = {
+                title: {
+                    text: `${symbol} 港股历史市盈率分布分析`,
+                    left: 'center',
+                    top: 16,
+                    textStyle: {
+                        fontSize: 18,
+                        fontWeight: '600',
+                        color: '#1f2937',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                    borderColor: '#e5e7eb',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                    textStyle: { color: '#374151', fontSize: 13 },
+                    confine: false,
+                    appendToBody: true,
+                    enterable: true,
+                    hideDelay: 100,
+                    axisPointer: {
+                        type: 'shadow',
+                        shadowStyle: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    formatter: function (params) {
+                        const dataIndex = params[0].dataIndex;
+                        const count = params[0].value;
+                        const interval = intervals[dataIndex];
+                        let tooltipText = `<div style="padding: 8px;">
+                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 8px; font-size: 14px;">市盈率区间: ${interval.start}-${interval.end}</div>
+                            <div style="color: #6b7280; font-size: 13px;">天数: <span style="font-weight: 600; color: #1f2937;">${count}</span></div>`;
+
+                        if (interval.isLatest) {
+                            tooltipText += `<div style="color: #ef4444; font-size: 13px; margin-top: 4px;">
+                                最新市盈率: <span style="font-weight: 600;">${latestPe}</span><br/>
+                                <span style="font-size: 12px;">(${latestDate})</span>
+                            </div>`;
+                        }
+
+                        tooltipText += '</div>';
+                        return tooltipText;
+                    }
+                },
+                grid: {
+                    left: '6%',
+                    right: '6%',
+                    bottom: '18%',
+                    top: '22%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: xAxisData,
+                    axisLabel: {
+                        fontSize: 11,
+                        color: '#6b7280',
+                        fontWeight: '500',
+                        rotate: 45,
+                        interval: Math.ceil(xAxisData.length / 20) // 只显示部分标签，避免重叠
+                    },
+                    axisTick: {
+                        alignWithLabel: true
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '天数',
+                    nameTextStyle: {
+                        color: '#6b7280',
+                        fontSize: 12
+                    },
+                    axisLabel: {
+                        color: '#6b7280',
+                        fontSize: 11
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#e5e7eb',
+                            type: 'dashed'
+                        }
+                    }
+                },
+                series: [{
+                    name: '天数',
+                    type: 'bar',
+                    data: data,
+                    barWidth: '80%',
+                    itemStyle: {
+                        borderRadius: [4, 4, 0, 0]
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+            
+            // 添加图表说明
+            const chartContainer = document.getElementById('hkPeDistributionChart');
+            if (chartContainer) {
+                const infoDiv = document.createElement('div');
+                infoDiv.style.cssText = 'text-align: center; margin-top: 10px; color: #6b7280; font-size: 12px;';
+                infoDiv.innerHTML = `总天数: ${totalDays} | 市盈率范围: ${minPe} - ${maxPe} | 最新市盈率: ${latestPe} (${latestDate})`;
+                chartContainer.appendChild(infoDiv);
+            }
+        }
+        
         /**
          * 根据类型过滤器过滤数据
          */

@@ -901,7 +901,7 @@ public class FinancialAnalysisService {
 
     /**
      * 分析股票历史市盈率分布
-     * 将历史市盈率数据分割成100个区间，统计每个区间的天数
+     * 将历史市盈率数据分割成1000个区间，统计每个区间的天数
      * 
      * @param symbol 股票代码
      * @return 市盈率分布分析结果
@@ -965,7 +965,7 @@ public class FinancialAnalysisService {
             double maxPe = validPeValues.stream().mapToDouble(Double::doubleValue).max().orElse(0);
             
             // 分割成100个区间
-            int intervalCount = 100;
+            int intervalCount = 1000;
             double intervalSize = (maxPe - minPe) / intervalCount;
             
             // 统计每个区间的天数
@@ -990,8 +990,8 @@ public class FinancialAnalysisService {
                 
                 Map<String, Object> interval = new HashMap<>();
                 interval.put("index", i);
-                interval.put("start", Math.round(intervalStart * 100.0) / 100.0);
-                interval.put("end", Math.round(intervalEnd * 100.0) / 100.0);
+                interval.put("start", Math.round(intervalStart * 1000.0) / 1000.0);
+                interval.put("end", Math.round(intervalEnd * 1000.0) / 1000.0);
                 interval.put("count", intervalCounts[i]);
                 interval.put("isLatest", i == latestPeIntervalIndex);
                 
@@ -1001,9 +1001,9 @@ public class FinancialAnalysisService {
             result.put("success", true);
             result.put("intervals", intervals);
             result.put("totalDays", validPeValues.size());
-            result.put("minPe", Math.round(minPe * 100.0) / 100.0);
-            result.put("maxPe", Math.round(maxPe * 100.0) / 100.0);
-            result.put("latestPe", latestPeValue != null ? Math.round(latestPeValue * 100.0) / 100.0 : null);
+            result.put("minPe", Math.round(minPe * 1000.0) / 1000.0);
+            result.put("maxPe", Math.round(maxPe * 1000.0) / 1000.0);
+            result.put("latestPe", latestPeValue != null ? Math.round(latestPeValue * 1000.0) / 100.0 : null);
             result.put("latestDate", latestDate);
             
         } catch (Exception e) {
