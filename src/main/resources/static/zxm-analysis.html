@@ -56,6 +56,21 @@
             overflow: hidden;
             margin-top: 12px;
             margin-bottom: 20px;
+            min-height: auto; /* 防止意外的高度设置 */
+        }
+        
+        /* 确保页面区域不会出现意外的空白 */
+        .welcome-section,
+        .chart-container,
+        .stock-info-section,
+        .watchlist-section {
+            min-height: auto;
+            height: auto;
+        }
+        
+        /* 防止页面出现滚动条导致的空白 */
+        body {
+            overflow-x: hidden;
         }
 
         .header {
@@ -373,6 +388,34 @@
             border-color: #b91c1c;
         }
 
+        .stock-type-3 {
+            background: #6b7280;
+            color: white;
+            border-color: #4b5563;
+        }
+
+        /* 黑名单按钮样式 */
+        .nav-button.blacklist-btn {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            border-color: #4b5563;
+        }
+
+        .nav-button.blacklist-btn:hover {
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+            border-color: #374151;
+        }
+
+        /* 市场概况按钮样式 */
+        .nav-button.market-overview-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-color: #d97706;
+        }
+
+        .nav-button.market-overview-btn:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            border-color: #b45309;
+        }
+
         .analyze-btn {
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             color: white;
@@ -447,6 +490,32 @@
         .remove-btn:active {
             transform: translateY(0);
             box-shadow: 0 1px 2px rgba(239, 68, 68, 0.3);
+        }
+
+        .remove-blacklist-btn {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(249, 115, 22, 0.3);
+            min-width: 60px;
+            margin-left: 4px;
+        }
+
+        .remove-blacklist-btn:hover {
+            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(249, 115, 22, 0.4);
+        }
+
+        .remove-blacklist-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(249, 115, 22, 0.3);
         }
 
         /* 操作列样式优化 */
@@ -1327,6 +1396,24 @@
             background: linear-gradient(135deg, #059669 0%, #047857 100%);
         }
 
+        .blacklist-btn {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+        }
+
+        .blacklist-btn:hover {
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+        }
+
+        .remove-blacklist-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .remove-blacklist-btn:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        }
+
         .delete-btn {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
@@ -1335,6 +1422,8 @@
         .delete-btn:hover {
             background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
         }
+
+
 
         .watch-badge {
             display: inline-block;
@@ -1350,6 +1439,17 @@
         .portfolio-badge {
             display: inline-block;
             background: #10b981;
+            color: white;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        .blacklist-badge {
+            display: inline-block;
+            background: #6b7280;
             color: white;
             font-size: 12px;
             padding: 2px 6px;
@@ -1631,8 +1731,14 @@
                 <h1>智能财务分析系统</h1>
             </div>
             <div class="nav-section">
+                <button class="nav-button market-overview-btn" onclick="showMarketOverview()">
+                    市场概况
+                </button>
                 <button class="nav-button" onclick="showWatchlist()">
                     自选股
+                </button>
+                <button class="nav-button blacklist-btn" onclick="showBlacklist()">
+                    黑名单
                 </button>
             </div>
         </div>
@@ -1707,6 +1813,50 @@
                     </div>
                     </div>
 
+        <!-- 黑名单表格区域 -->
+        <div id="blacklistSection" class="watchlist-section" style="display: none;">
+            <div class="watchlist-header">
+                <h2 class="watchlist-title">黑名单列表</h2>
+                <button class="watchlist-close" onclick="hideBlacklist()">关闭</button>
+            </div>
+            <div id="blacklistTableContainer">
+                <table class="watchlist-table">
+                    <thead>
+                        <tr>
+                            <th>股票代码</th>
+                            <th>股票名称</th>
+                            <th>类型</th>
+                            <th class="sortable" data-field="peTtm" onclick="sortBlacklistTable('peTtm')">
+                                市盈率TTM
+                                <span class="sort-icon">↕</span>
+                            </th>
+                            <th class="sortable" data-field="roe" onclick="sortBlacklistTable('roe')">
+                                ROE(%)
+                                <span class="sort-icon">↕</span>
+                            </th>
+                            <th class="sortable" data-field="profitQuality" onclick="sortBlacklistTable('profitQuality')">
+                                利润质量
+                                <span class="sort-icon">↕</span>
+                            </th>
+                            <th class="sortable" data-field="assetsQuality" onclick="sortBlacklistTable('assetsQuality')">
+                                资产质量
+                                <span class="sort-icon">↕</span>
+                            </th>
+                            <th class="sortable" data-field="peScore" onclick="sortBlacklistTable('peScore')">
+                                市盈率得分
+                                <span class="sort-icon">↕</span>
+                            </th>
+                            <th>更新时间</th>
+                            <th style="width: 140px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="blacklistTableBody">
+                        <!-- 数据将通过JavaScript动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- 市危率展示区域 -->
         <div id="welcomeSection" class="welcome-section">
             <div class="market-risk-section">
@@ -1779,6 +1929,9 @@
                         </button>
                         <button id="addToPortfolioBtn" class="action-btn portfolio-btn" onclick="addToWatchlist(2)">
                             设为持仓股
+                        </button>
+                        <button id="addToBlacklistBtn" class="action-btn blacklist-btn" onclick="addToBlacklist()">
+                            一键拉黑
                         </button>
                     </div>
                 </div>
@@ -1873,10 +2026,11 @@
             // 开始翻石头专用动画
             startFlipStoneAnimation();
 
-            // 获取股票列表
+            // 获取股票列表和黑名单列表
             Promise.all([
                 fetch('http://localhost:8888/api/zxm/stock-list'),
-                fetch('http://localhost:8888/api/zxm/hk-stock-list')
+                fetch('http://localhost:8888/api/zxm/hk-stock-list'),
+                fetch('/api/watchlist/all')
             ])
                 .then(responses => {
                     return Promise.all(responses.map(response => {
@@ -1886,23 +2040,44 @@
                         return response.json();
                     }));
                 })
-                .then(([aShareData, hkData]) => {
+                .then(([aShareData, hkData, watchlistData]) => {
                     if (!aShareData || aShareData.length === 0) {
                         throw new Error('获取A股列表失败');
                     }
 
-                    // 过滤出A股股票（6位数字代码）
-                    const aShareStocks = aShareData.filter(stock => stock.code && stock.code.length === 6 && /^\d{6}$/.test(stock.code));
+                    // 获取黑名单股票代码列表
+                    const blacklistCodes = new Set();
+                    if (watchlistData && watchlistData.success && watchlistData.data) {
+                        watchlistData.data.forEach(stock => {
+                            if (stock.stockType === 3) { // 黑名单股票
+                                blacklistCodes.add(stock.stockCode);
+                            }
+                        });
+                    }
+
+                    // 过滤出A股股票（6位数字代码），并排除黑名单股票
+                    const aShareStocks = aShareData.filter(stock => 
+                        stock.code && 
+                        stock.code.length === 6 && 
+                        /^\d{6}$/.test(stock.code) &&
+                        !blacklistCodes.has(stock.code)
+                    );
 
                     if (aShareStocks.length === 0) {
                         throw new Error('没有找到可用的A股股票');
                     }
 
-                    // 暂时只从A股中随机选择
+                    // 从过滤后的A股中随机选择
                     const randomIndex = Math.floor(Math.random() * aShareStocks.length);
                     const selectedStock = aShareStocks[randomIndex];
 
                     console.log('翻石头找到的宝藏股票:', selectedStock);
+                    console.log('翻石头统计信息:', {
+                        '总A股数量': aShareData.length,
+                        '黑名单股票数量': blacklistCodes.size,
+                        '可用A股数量': aShareStocks.length,
+                        '排除比例': `${((blacklistCodes.size / aShareData.length) * 100).toFixed(1)}%`
+                    });
 
                     // 更新输入框
                     document.getElementById('stockSymbol').value = selectedStock.code;
@@ -1915,7 +2090,8 @@
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;
                     showError('翻石头失败，请稍后重试');
-                    document.getElementById('welcomeSection').style.display = 'block';
+                    // 翻石头失败时，保持当前分析状态，不显示welcome页面
+                    console.log('翻石头失败，保持分析状态');
                 });
         }
 
@@ -1926,6 +2102,7 @@
             hideSuggestions();
 
             const symbol = document.getElementById('stockSymbol').value.trim();
+            console.log('analyzeStock: 获取到股票代码:', symbol);
 
             if (!symbol) {
                 showError('请输入股票代码');
@@ -1948,6 +2125,8 @@
                 document.querySelector('#loading .loading-text').textContent = `正在分析${isHkStock ? '港股' : 'A股'}数据`;
                 document.querySelector('#loading .loading-subtext').textContent = '系统正在获取财务数据并生成分析报告';
             }
+            
+            // 隐藏所有页面区域
             document.getElementById('error').style.display = 'none';
             document.getElementById('chartContainer').style.display = 'none';
             document.getElementById('stockInfoSection').style.display = 'none';
@@ -1956,7 +2135,8 @@
             document.getElementById('flipStoneBtn').disabled = true;
             
             // 设置页面状态为分析中
-            currentPageState = 'analysis';
+            updatePageState('analysis');
+            console.log('analyzeStock: 页面状态已设置为analysis');
 
             // 重置加载步骤
             resetLoadingSteps();
@@ -2055,17 +2235,20 @@
                                 }, 100); // 延迟100ms确保容器已创建
                             } else {
                                 showError(analysisData.message || '港股分析失败');
-                                document.getElementById('welcomeSection').style.display = 'block';
+                                // 分析失败时，保持当前分析状态，不显示welcome页面
+                                console.log('港股分析失败，保持分析状态');
                             }
                         }).catch(error => {
                             console.error('港股财务分析数据解析失败:', error);
                             showError('港股财务分析数据解析失败');
-                            document.getElementById('welcomeSection').style.display = 'block';
+                            // 分析失败时，保持当前分析状态，不显示welcome页面
+                            console.log('港股财务分析数据解析失败，保持分析状态');
                         });
                     } else {
                         console.error('港股财务分析数据获取失败:', analysisResult.reason || '网络错误');
                         showError('港股财务分析数据获取失败，请稍后重试');
-                        document.getElementById('welcomeSection').style.display = 'block';
+                        // 分析失败时，保持当前分析状态，不显示welcome页面
+                        console.log('港股财务分析数据获取失败，保持分析状态');
                     }
                 })
                 .catch(error => {
@@ -2073,7 +2256,8 @@
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;
                     showError('港股数据获取失败，请稍后重试');
-                    document.getElementById('welcomeSection').style.display = 'block';
+                    // 分析失败时，保持当前分析状态，不显示welcome页面
+                    console.log('港股数据获取失败，保持分析状态');
                 });
         }
 
@@ -2173,7 +2357,8 @@
                     } else {
                         console.error('财务分析数据获取失败:', analysisData);
                         showError(analysisData?.message || '分析失败');
-                        document.getElementById('welcomeSection').style.display = 'block';
+                        // 分析失败时，保持当前分析状态，不显示welcome页面
+                        console.log('财务分析数据获取失败，保持分析状态');
                     }
                 })
                 .catch(error => {
@@ -2188,7 +2373,8 @@
                     document.getElementById('analyzeBtn').disabled = false;
                     document.getElementById('flipStoneBtn').disabled = false;
                     showError('数据获取失败，请稍后重试');
-                    document.getElementById('welcomeSection').style.display = 'block';
+                    // 分析失败时，保持当前分析状态，不显示welcome页面
+                    console.log('A股分析失败，保持分析状态');
                 });
         }
 
@@ -2209,10 +2395,17 @@
                     return;
                 }
                 
+                // 检查A股页面需要的DOM元素是否存在，如果不存在则恢复原始HTML结构
+                const stockCodeElement = document.getElementById('stockCode');
+                if (!stockCodeElement && window.originalAStockInfoHTML) {
+                    console.log('恢复A股页面HTML结构');
+                    stockInfoSection.innerHTML = window.originalAStockInfoHTML;
+                }
+                
                 // 设置全局股票代码，供自选股功能使用
                 window.currentStockCode = stockInfo.code;
                 
-            // 更新股票信息标题
+                // 更新股票信息标题
                 const stockInfoTitleElement = document.getElementById('stockInfoTitle');
                 if (stockInfoTitleElement) {
                     stockInfoTitleElement.textContent = `${stockInfo.name || stockInfo.code} - 基本信息`;
@@ -3390,36 +3583,14 @@
 
 
 
-        function showError(message) {
-            document.getElementById('error').textContent = message;
-            document.getElementById('error').style.display = 'block';
-        }
-
-        function showSuccess(message) {
-            // 创建成功消息元素
-            const successElement = document.createElement('div');
-            successElement.className = 'success-message';
-            successElement.textContent = message;
-            successElement.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-                color: white;
-                padding: 16px 24px;
-                border-radius: 12px;
-                box-shadow: 0 8px 25px rgba(5, 150, 105, 0.3);
-                z-index: 10000;
-                font-weight: 500;
-                animation: slideInRight 0.3s ease-out;
-            `;
-            
-            // 添加动画样式
+        // 确保动画样式只添加一次
+        if (!document.getElementById('notification-animations')) {
             const style = document.createElement('style');
+            style.id = 'notification-animations';
             style.textContent = `
-                @keyframes slideInRight {
+                @keyframes slideInLeft {
                     from {
-                        transform: translateX(100%);
+                        transform: translateX(-100%);
                         opacity: 0;
                     }
                     to {
@@ -3427,19 +3598,152 @@
                         opacity: 1;
                     }
                 }
+                @keyframes slideOutLeft {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(-100%);
+                        opacity: 0;
+                    }
+                }
             `;
             document.head.appendChild(style);
+        }
+
+        // 全局变量：跟踪当前显示的提示消息数量
+        let activeNotifications = 0;
+        const NOTIFICATION_HEIGHT = 80; // 每个提示消息的高度（包含间距）
+
+        function showError(message) {
+            // 创建错误消息元素
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
             
-            document.body.appendChild(successElement);
+            // 计算位置，避免重叠
+            const topPosition = 20 + (activeNotifications * NOTIFICATION_HEIGHT);
+            
+            errorElement.style.cssText = `
+                position: fixed;
+                top: ${topPosition}px;
+                left: 20px;
+                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+                z-index: 10000;
+                font-weight: 500;
+                max-width: 400px;
+                word-wrap: break-word;
+                animation: slideInLeft 0.3s ease-out;
+            `;
+            
+            errorElement.textContent = message;
+            document.body.appendChild(errorElement);
+            
+            // 增加活跃提示消息计数
+            activeNotifications++;
             
             // 3秒后自动移除
             setTimeout(() => {
-                successElement.style.animation = 'slideOutRight 0.3s ease-in';
-                successElement.style.transform = 'translateX(100%)';
+                errorElement.style.animation = 'slideOutLeft 0.3s ease-in';
+                errorElement.style.transform = 'translateX(-100%)';
+                setTimeout(() => {
+                    if (errorElement.parentNode) {
+                        errorElement.parentNode.removeChild(errorElement);
+                    }
+                    // 减少活跃提示消息计数
+                    activeNotifications--;
+                }, 300);
+            }, 3000);
+        }
+
+        function showSuccess(message) {
+            // 创建成功消息元素
+            const successElement = document.createElement('div');
+            successElement.className = 'success-message';
+            
+            // 计算位置，避免重叠
+            const topPosition = 20 + (activeNotifications * NOTIFICATION_HEIGHT);
+            
+            successElement.style.cssText = `
+                position: fixed;
+                top: ${topPosition}px;
+                left: 20px;
+                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                box-shadow: 0 8px 25px rgba(5, 150, 105, 0.3);
+                z-index: 10000;
+                font-weight: 500;
+                max-width: 400px;
+                word-wrap: break-word;
+                animation: slideInLeft 0.3s ease-out;
+            `;
+            
+            successElement.textContent = message;
+            document.body.appendChild(successElement);
+            
+            // 增加活跃提示消息计数
+            activeNotifications++;
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                successElement.style.animation = 'slideOutLeft 0.3s ease-in';
+                successElement.style.transform = 'translateX(-100%)';
                 setTimeout(() => {
                     if (successElement.parentNode) {
                         successElement.parentNode.removeChild(successElement);
                     }
+                    // 减少活跃提示消息计数
+                    activeNotifications--;
+                }, 300);
+            }, 3000);
+        }
+
+        function showInfo(message) {
+            // 创建信息消息元素
+            const infoElement = document.createElement('div');
+            infoElement.className = 'info-message';
+            
+            // 计算位置，避免重叠
+            const topPosition = 20 + (activeNotifications * NOTIFICATION_HEIGHT);
+            
+            infoElement.style.cssText = `
+                position: fixed;
+                top: ${topPosition}px;
+                left: 20px;
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+                z-index: 10000;
+                font-weight: 500;
+                max-width: 400px;
+                word-wrap: break-word;
+                animation: slideInLeft 0.3s ease-out;
+            `;
+            
+            infoElement.textContent = message;
+            document.body.appendChild(infoElement);
+            
+            // 增加活跃提示消息计数
+            activeNotifications++;
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                infoElement.style.animation = 'slideOutLeft 0.3s ease-out';
+                infoElement.style.transform = 'translateX(-100%)';
+                setTimeout(() => {
+                    if (infoElement.parentNode) {
+                        infoElement.parentNode.removeChild(infoElement);
+                    }
+                    // 减少活跃提示消息计数
+                    activeNotifications--;
                 }, 300);
             }, 3000);
         }
@@ -3493,8 +3797,8 @@
                 originalStockName = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
             }
             
-            if (watchlistData && (watchlistData.stockType === 1 || watchlistData.stockType === 2)) {
-                // 股票已在自选股中（观察股或持仓股）
+            if (watchlistData && (watchlistData.stockType === 1 || watchlistData.stockType === 2 || watchlistData.stockType === 3)) {
+                // 股票已在自选股中（观察股、持仓股或黑名单股票）
                 const stockType = watchlistData.stockType;
                 
                 if (stockType === 1) {
@@ -3517,6 +3821,12 @@
                     
                     // 显示删除按钮
                     addDeleteButton();
+                    
+                    // 显示一键拉黑按钮
+                    const addToBlacklistBtn = document.getElementById('addToBlacklistBtn');
+                    if (addToBlacklistBtn) {
+                        addToBlacklistBtn.style.display = 'inline-block';
+                    }
                 } else if (stockType === 2) {
                     // 持仓股 - 在标题左侧显示标记
                     if (stockInfoTitle && stockInfoTitle.textContent) {
@@ -3537,17 +3847,48 @@
                     
                     // 显示删除按钮
                     addDeleteButton();
+                    
+                    // 显示一键拉黑按钮
+                    const addToBlacklistBtn = document.getElementById('addToBlacklistBtn');
+                    if (addToBlacklistBtn) {
+                        addToBlacklistBtn.style.display = 'inline-block';
+                    }
+                } else if (stockType === 3) {
+                    // 黑名单股票 - 显示移除黑名单按钮，隐藏其他按钮
+                    watchBtn.style.display = 'none';
+                    portfolioBtn.style.display = 'none';
+                    
+                    // 隐藏一键拉黑按钮
+                    const addToBlacklistBtn = document.getElementById('addToBlacklistBtn');
+                    if (addToBlacklistBtn) {
+                        addToBlacklistBtn.style.display = 'none';
+                    }
+                    
+                    // 显示移除黑名单按钮
+                    addRemoveBlacklistButton();
+                    
+                    // 在标题左侧显示黑名单标记
+                    if (stockInfoTitle && stockInfoTitle.textContent) {
+                        const cleanTitle = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
+                        stockInfoTitle.innerHTML = `<span class="blacklist-badge">黑</span> ${cleanTitle}`;
+                    }
+                    // 为港股页面添加标记到公司名称标题
+                    const companyTitle = document.querySelector('.stock-info-header h2');
+                    if (companyTitle && !companyTitle.innerHTML.includes('黑')) {
+                        const cleanCompanyTitle = companyTitle.textContent.replace(/[观持黑]/g, '').trim();
+                        companyTitle.innerHTML = `<span class="blacklist-badge">黑</span> ${cleanCompanyTitle}`;
+                    }
                 }
             } else {
                 // 股票不在自选股中，或者stockType为0（系统添加），显示默认按钮
-                // 移除标题中的标记
+                // 移除标题中的标记（包括黑名单标记）
                 if (stockInfoTitle) {
-                    stockInfoTitle.innerHTML = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+                    stockInfoTitle.innerHTML = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
                 }
-                // 为港股页面移除公司名称标题中的标记
+                // 为港股页面移除公司名称标题中的标记（包括黑名单标记）
                 const companyTitle = document.querySelector('.stock-info-header h2');
                 if (companyTitle) {
-                    companyTitle.innerHTML = companyTitle.textContent.replace(/[观持]/g, '').trim();
+                    companyTitle.innerHTML = companyTitle.textContent.replace(/[观持黑]/g, '').trim();
                 }
                 watchBtn.textContent = '加观察';
                 watchBtn.onclick = () => addToWatchlist(1);
@@ -3556,14 +3897,24 @@
                 portfolioBtn.onclick = () => addToWatchlist(2);
                 portfolioBtn.style.display = 'inline-block';
                 
-                // 移除删除按钮
+                // 显示一键拉黑按钮
+                const addToBlacklistBtn = document.getElementById('addToBlacklistBtn');
+                if (addToBlacklistBtn) {
+                    addToBlacklistBtn.style.display = 'inline-block';
+                }
+                
+                // 移除删除按钮和移除黑名单按钮
                 removeDeleteButton();
+                removeRemoveBlacklistButton();
             }
         }
         
         // 添加删除按钮
         function addDeleteButton() {
             if (document.getElementById('deleteWatchlistBtn')) return;
+            
+            // 移除移除黑名单按钮（如果存在）
+            removeRemoveBlacklistButton();
             
             const deleteBtn = document.createElement('button');
             deleteBtn.id = 'deleteWatchlistBtn';
@@ -3580,6 +3931,14 @@
             const deleteBtn = document.getElementById('deleteWatchlistBtn');
             if (deleteBtn) {
                 deleteBtn.remove();
+            }
+        }
+
+        // 移除移除黑名单按钮
+        function removeRemoveBlacklistButton() {
+            const removeBlacklistBtn = document.getElementById('removeBlacklistBtn');
+            if (removeBlacklistBtn) {
+                removeBlacklistBtn.remove();
             }
         }
         
@@ -3718,6 +4077,213 @@
             });
         }
 
+        // 一键拉黑功能
+        function addToBlacklist() {
+            let stockCode = '';
+            let stockName = '';
+            
+            // 获取股票代码，兼容A股和港股页面
+            const stockCodeElement = document.getElementById('stockCode');
+            if (stockCodeElement) {
+                stockCode = stockCodeElement.textContent;
+            }
+            
+            // 如果从DOM元素获取不到股票代码，尝试从全局变量获取
+            if (!stockCode || stockCode === '-') {
+                if (window.currentStockCode) {
+                    stockCode = window.currentStockCode;
+                    console.log('从全局变量获取到股票代码:', stockCode);
+                }
+            }
+            
+            // 获取股票名称，兼容A股和港股页面
+            const stockNameElement = document.getElementById('stockName');
+            const stockInfoTitle = document.getElementById('stockInfoTitle');
+            
+            if (stockNameElement && stockNameElement.textContent && stockNameElement.textContent !== '-') {
+                stockName = stockNameElement.textContent;
+            } else if (stockInfoTitle && stockInfoTitle.textContent) {
+                stockName = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+            }
+            
+            if (!stockCode || stockCode === '-' || !stockName || stockName === '-') {
+                showError('股票信息不完整，无法添加到黑名单');
+                return;
+            }
+
+            const stockData = {
+                stockCode: stockCode,
+                stockName: stockName,
+                stockType: 3  // 3表示黑名单股票
+            };
+
+            console.log('发送黑名单数据:', stockData);
+            
+            // 调用后端API添加到黑名单
+            fetch('/api/watchlist/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(stockData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(`已成功将 ${stockName} 加入黑名单`);
+                    // 重新检查状态
+                    checkWatchlistStatus(stockCode);
+                    
+                    // 如果自选股列表当前是打开的，自动刷新数据
+                    const watchlistSection = document.getElementById('watchlistSection');
+                    if (watchlistSection && watchlistSection.style.display === 'block') {
+                        loadWatchlistData();
+                    }
+                } else {
+                    showError('操作失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('添加到黑名单失败:', error);
+                showError('添加到黑名单失败，请稍后重试');
+            });
+        }
+
+
+
+        // 移除黑名单功能
+        function removeFromBlacklist(stockCode = '', stockName = '') {
+            // 如果没有传递参数，尝试从DOM获取
+            if (!stockCode || !stockName) {
+                // 获取股票代码，兼容A股和港股页面
+                const stockCodeElement = document.getElementById('stockCode');
+                if (stockCodeElement) {
+                    stockCode = stockCodeElement.textContent;
+                }
+                
+                // 如果从DOM元素获取不到股票代码，尝试从全局变量获取
+                if (!stockCode || stockCode === '-') {
+                    if (window.currentStockCode) {
+                        stockCode = window.currentStockCode;
+                        console.log('从全局变量获取到股票代码:', stockCode);
+                    }
+                }
+                
+                // 获取股票名称，兼容A股和港股页面
+                const stockNameElement = document.getElementById('stockName');
+                const stockInfoTitle = document.getElementById('stockInfoTitle');
+                
+                if (stockNameElement && stockNameElement.textContent && stockNameElement.textContent !== '-') {
+                    stockName = stockNameElement.textContent;
+                } else if (stockInfoTitle && stockInfoTitle.textContent) {
+                    stockName = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
+                }
+            }
+            
+            if (!stockCode || stockCode === '-' || !stockName || stockName === '-') {
+                showError('股票信息不完整，无法从黑名单移除');
+                return;
+            }
+
+            const stockData = {
+                stockCode: stockCode,
+                stockName: stockName,
+                stockType: 0  // 0表示普通股票（系统添加）
+            };
+
+            console.log('发送移除黑名单数据:', stockData);
+            
+            // 调用后端API移除黑名单
+            fetch('/api/watchlist/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(stockData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(`已成功将 ${stockName} 从黑名单中移除`);
+                    
+                    // 立即更新按钮状态，显示默认按钮
+                    const watchBtn = document.getElementById('addToWatchlistBtn');
+                    const portfolioBtn = document.getElementById('addToPortfolioBtn');
+                    const addToBlacklistBtn = document.getElementById('addToBlacklistBtn');
+                    
+                    if (watchBtn) {
+                        watchBtn.style.display = 'inline-block';
+                        watchBtn.textContent = '加观察';
+                        watchBtn.onclick = () => addToWatchlist(1);
+                    }
+                    if (portfolioBtn) {
+                        portfolioBtn.style.display = 'inline-block';
+                        portfolioBtn.textContent = '设为持仓股';
+                        portfolioBtn.onclick = () => addToWatchlist(2);
+                    }
+                    if (addToBlacklistBtn) {
+                        addToBlacklistBtn.style.display = 'inline-block';
+                    }
+                    
+                    // 移除移除黑名单按钮
+                    removeRemoveBlacklistButton();
+                    
+                    // 清除标题中的黑名单标记
+                    const stockInfoTitle = document.getElementById('stockInfoTitle');
+                    if (stockInfoTitle) {
+                        stockInfoTitle.innerHTML = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
+                    }
+                    const companyTitle = document.querySelector('.stock-info-header h2');
+                    if (companyTitle) {
+                        companyTitle.innerHTML = companyTitle.textContent.replace(/[观持黑]/g, '').trim();
+                    }
+                    
+                    // 重新检查状态
+                    checkWatchlistStatus(stockCode);
+                    
+                    // 如果自选股列表当前是打开的，自动刷新数据
+                    const watchlistSection = document.getElementById('watchlistSection');
+                    if (watchlistSection && watchlistSection.style.display === 'block') {
+                        loadWatchlistData();
+                    }
+                    
+                    // 如果黑名单列表当前是打开的，自动刷新数据
+                    const blacklistSection = document.getElementById('blacklistSection');
+                    if (blacklistSection && blacklistSection.style.display === 'block') {
+                        loadBlacklistData();
+                    }
+                } else {
+                    showError('操作失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('从黑名单移除失败:', error);
+                showError('从黑名单移除失败，请稍后重试');
+            });
+        }
+
+        // 添加移除黑名单按钮
+        function addRemoveBlacklistButton() {
+            // 检查是否已经存在移除黑名单按钮
+            if (document.getElementById('removeBlacklistBtn')) return;
+            
+            // 移除删除按钮（如果存在）
+            removeDeleteButton();
+            
+            const stockActions = document.querySelector('.stock-actions');
+            if (!stockActions) return;
+            
+            // 创建移除黑名单按钮
+            const removeBtn = document.createElement('button');
+            removeBtn.id = 'removeBlacklistBtn';
+            removeBtn.className = 'action-btn remove-blacklist-btn';
+            removeBtn.onclick = removeFromBlacklist;
+            removeBtn.textContent = '移除黑名单';
+            
+            // 插入到按钮组中
+            stockActions.appendChild(removeBtn);
+        }
+
         // 全局tooltip修复函数
         function fixTooltipZIndex() {
             const tooltips = document.querySelectorAll('.echarts-tooltip');
@@ -3730,6 +4296,9 @@
 
         // 定期检查并修复tooltip z-index
         setInterval(fixTooltipZIndex, 100);
+        
+        // 移除多余的页面状态检查，使用新的智能页面管理系统
+        // setInterval(checkAndFixPageState, 5000);
 
         // 重置加载步骤
         function resetLoadingSteps() {
@@ -3828,41 +4397,64 @@
                 document.getElementById('loadingOverlay').style.display = 'none';
                 document.getElementById('loading').style.display = 'none';
                 
-                // 检查是否需要自动关闭自选股列表
-                if (window.autoCloseWatchlistAfterAnalysis) {
+                // 检查是否需要自动关闭自选股列表或黑名单列表
+                if (window.autoCloseWatchlistAfterAnalysis || window.autoCloseBlacklistAfterAnalysis) {
                     // 重置标志
                     window.autoCloseWatchlistAfterAnalysis = false;
+                    window.autoCloseBlacklistAfterAnalysis = false;
                     
-                    // 直接强制隐藏自选股列表
+                    // 强制隐藏所有列表
                     const watchlistSection = document.getElementById('watchlistSection');
+                    const blacklistSection = document.getElementById('blacklistSection');
+                    
                     if (watchlistSection) {
                         watchlistSection.style.display = 'none';
                         console.log('分析完成后强制关闭自选股列表');
                     }
-                    
-                    // 恢复页面状态
-                    if (currentPageState === 'analysis') {
-                        const chartContainer = document.getElementById('chartContainer');
-                        const stockInfoSection = document.getElementById('stockInfoSection');
-                        if (chartContainer) chartContainer.style.display = 'block';
-                        if (stockInfoSection) stockInfoSection.style.display = 'block';
+                    if (blacklistSection) {
+                        blacklistSection.style.display = 'none';
+                        console.log('分析完成后强制关闭黑名单列表');
                     }
                 }
                 
-                // 新增：如果自选股列表当前是打开的，分析完成后自动关闭它
-                const watchlistSection = document.getElementById('watchlistSection');
-                if (watchlistSection && watchlistSection.style.display === 'block') {
-                    console.log('分析完成后自动关闭已打开的自选股列表');
-                    watchlistSection.style.display = 'none';
+                // 分析完成后，确保显示分析结果页面
+                console.log('分析完成，当前页面状态:', currentPageState);
+                
+                // 如果当前状态是analysis，确保显示分析结果
+                if (currentPageState === 'analysis') {
+                    console.log('确保显示分析结果页面');
+                    const chartContainer = document.getElementById('chartContainer');
+                    const stockInfoSection = document.getElementById('stockInfoSection');
                     
-                    // 恢复页面状态
-                    if (currentPageState === 'analysis') {
-                        const chartContainer = document.getElementById('chartContainer');
-                        const stockInfoSection = document.getElementById('stockInfoSection');
-                        if (chartContainer) chartContainer.style.display = 'block';
-                        if (stockInfoSection) stockInfoSection.style.display = 'block';
-                    }
+                    if (chartContainer) chartContainer.style.display = 'block';
+                    if (stockInfoSection) stockInfoSection.style.display = 'block';
+                    
+                    // 隐藏其他页面
+                    const welcomeSection = document.getElementById('welcomeSection');
+                    if (welcomeSection) welcomeSection.style.display = 'none';
+                    
+                    console.log('分析结果页面显示完成');
+                } else {
+                    console.warn('页面状态异常，当前状态不是analysis:', currentPageState);
+                    // 强制设置为analysis状态并显示分析结果
+                    updatePageState('analysis');
+                    const chartContainer = document.getElementById('chartContainer');
+                    const stockInfoSection = document.getElementById('stockInfoSection');
+                    
+                    if (chartContainer) chartContainer.style.display = 'block';
+                    if (stockInfoSection) stockInfoSection.style.display = 'block';
+                    
+                    // 隐藏其他页面
+                    const welcomeSection = document.getElementById('welcomeSection');
+                    if (welcomeSection) welcomeSection.style.display = 'none';
+                    
+                    console.log('强制显示分析结果页面完成');
                 }
+                
+                // 验证页面状态
+                setTimeout(() => {
+                    validatePageState();
+                }, 100);
             }, 500);
         }
 
@@ -3877,7 +4469,73 @@
         // 页面加载时获取股票列表
         window.addEventListener('load', function () {
             loadStockLists();
+            
+            // 保存A股页面的原始HTML结构
+            setTimeout(() => {
+                const stockInfoSection = document.getElementById('stockInfoSection');
+                if (stockInfoSection) {
+                    window.originalAStockInfoHTML = stockInfoSection.innerHTML;
+                    console.log('已保存A股页面HTML结构');
+                }
+            }, 100);
+            
+            // 页面加载完成后使用新的页面状态管理系统
+            setTimeout(() => {
+                // 初始化页面状态为welcome
+                updatePageState('welcome');
+                console.log('页面加载完成，初始状态设置为welcome');
+            }, 200);
         });
+        
+        // 页面状态检查和修复函数 - 已废弃，使用新的智能页面管理系统
+        // function checkAndFixPageState() {
+        //     // 这个函数过于激进，会干扰正常的页面状态管理
+        //     // 已被新的页面状态管理系统替代
+        // }
+        
+        // 页面状态验证函数 - 智能验证，不会误判正常状态
+        function validatePageState() {
+            const welcomeSection = document.getElementById('welcomeSection');
+            const chartContainer = document.getElementById('chartContainer');
+            const stockInfoSection = document.getElementById('stockInfoSection');
+            const watchlistSection = document.getElementById('watchlistSection');
+            const blacklistSection = document.getElementById('blacklistSection');
+            
+            // 智能检查页面状态和实际显示是否一致
+            let actualState = 'unknown';
+            
+            // 分析页面：需要同时显示图表容器和股票信息区域
+            if (chartContainer && chartContainer.style.display === 'block' && 
+                stockInfoSection && stockInfoSection.style.display === 'block') {
+                actualState = 'analysis';
+            }
+            // 欢迎页面：只显示欢迎区域
+            else if (welcomeSection && welcomeSection.style.display === 'block') {
+                actualState = 'welcome';
+            }
+            // 自选股列表：只显示自选股区域
+            else if (watchlistSection && watchlistSection.style.display === 'block') {
+                actualState = 'watchlist';
+            }
+            // 黑名单列表：只显示黑名单区域
+            else if (blacklistSection && blacklistSection.style.display === 'block') {
+                actualState = 'blacklist';
+            }
+            
+            // 只在真正需要修复时才输出警告
+            if (currentPageState !== actualState && actualState !== 'unknown') {
+                console.log('页面状态验证 - 状态不一致，期望:', currentPageState, '实际:', actualState);
+                console.log('正在修复页面状态...');
+                updatePageState(actualState);
+                return false;
+            } else if (actualState === 'unknown') {
+                console.log('页面状态验证 - 当前状态未知，可能是页面正在切换中');
+                return true; // 不强制修复，让页面自然完成切换
+            } else {
+                console.log('页面状态验证 - 状态一致，无需修复');
+                return true;
+            }
+        }
 
         // 加载股票列表
         function loadStockLists() {
@@ -4986,6 +5644,9 @@
                     <button id="addToPortfolioBtn" class="action-btn portfolio-btn" onclick="addToWatchlist(2)">
                         设为持仓股
                     </button>
+                    <button id="addToBlacklistBtn" class="action-btn blacklist-btn" onclick="addToBlacklist()">
+                        一键拉黑
+                    </button>
                 </div>
             </div>`;
             
@@ -5061,6 +5722,11 @@
                 html += '<div class="company-intro-header"><h3>公司简介</h3></div>';
                 html += '<div class="company-intro-content">' + info.comintr + '</div>';
                 html += '</div>';
+            }
+            
+            // 保存A股页面的原始HTML结构（如果存在）
+            if (!window.originalAStockInfoHTML) {
+                window.originalAStockInfoHTML = section.innerHTML;
             }
             
             section.innerHTML = html;
@@ -5553,12 +6219,16 @@
             console.log('页面加载完成，初始化switch事件监听器');
             
             // 初始化页面状态
-            currentPageState = 'welcome';
+            updatePageState('welcome');
             console.log('初始化页面状态:', currentPageState);
             
             // 初始化自选股自动关闭标志
             window.autoCloseWatchlistAfterAnalysis = false;
             console.log('初始化自选股自动关闭标志:', window.autoCloseWatchlistAfterAnalysis);
+            
+            // 初始化黑名单自动关闭标志
+            window.autoCloseBlacklistAfterAnalysis = false;
+            console.log('初始化黑名单自动关闭标志:', window.autoCloseBlacklistAfterAnalysis);
             
             // 初始化switch切换事件
             const analysisSwitch = document.getElementById('analysisSwitch');
@@ -5604,7 +6274,86 @@
         });
 
         // 全局变量：跟踪页面状态
-        let currentPageState = 'welcome'; // 'welcome', 'analysis', 'watchlist'
+        let currentPageState = 'welcome'; // 'welcome', 'analysis', 'watchlist', 'blacklist'
+        let previousPageState = 'welcome'; // 记录上一个页面状态
+        
+        // 页面状态管理函数
+        function resetPageState() {
+            // 隐藏所有主要区域
+            const welcomeSection = document.getElementById('welcomeSection');
+            const chartContainer = document.getElementById('chartContainer');
+            const stockInfoSection = document.getElementById('stockInfoSection');
+            const watchlistSection = document.getElementById('watchlistSection');
+            const blacklistSection = document.getElementById('blacklistSection');
+            
+            if (welcomeSection) welcomeSection.style.display = 'none';
+            if (chartContainer) chartContainer.style.display = 'none';
+            if (stockInfoSection) stockInfoSection.style.display = 'none';
+            if (watchlistSection) watchlistSection.style.display = 'none';
+            if (blacklistSection) blacklistSection.style.display = 'none';
+        }
+        
+        // 更新页面状态
+        function updatePageState(newState) {
+            previousPageState = currentPageState;
+            currentPageState = newState;
+            console.log('页面状态更新:', previousPageState, '->', currentPageState);
+        }
+        
+        function restorePageState() {
+            resetPageState();
+            
+            console.log('开始恢复页面状态，当前状态:', currentPageState);
+            
+            // 根据当前状态恢复页面
+            switch (currentPageState) {
+                case 'welcome':
+                    const welcomeSection = document.getElementById('welcomeSection');
+                    if (welcomeSection) {
+                        welcomeSection.style.display = 'block';
+                        console.log('显示欢迎页面');
+                    }
+                    break;
+                case 'analysis':
+                    const chartContainer = document.getElementById('chartContainer');
+                    const stockInfoSection = document.getElementById('stockInfoSection');
+                    if (chartContainer) {
+                        chartContainer.style.display = 'block';
+                        console.log('显示图表容器');
+                    }
+                    if (stockInfoSection) {
+                        stockInfoSection.style.display = 'block';
+                        console.log('显示股票信息区域');
+                    }
+                    break;
+                case 'watchlist':
+                    const watchlistSection = document.getElementById('watchlistSection');
+                    if (watchlistSection) {
+                        watchlistSection.style.display = 'block';
+                        console.log('显示自选股列表');
+                    }
+                    break;
+                case 'blacklist':
+                    const blacklistSection = document.getElementById('blacklistSection');
+                    if (blacklistSection) {
+                        blacklistSection.style.display = 'block';
+                        console.log('显示黑名单列表');
+                    }
+                    break;
+                default:
+                    // 默认显示欢迎页面
+                    const defaultWelcomeSection = document.getElementById('welcomeSection');
+                    if (defaultWelcomeSection) {
+                        defaultWelcomeSection.style.display = 'block';
+                        console.log('默认显示欢迎页面');
+                    }
+                    updatePageState('welcome');
+                    break;
+            }
+            
+            // 调试信息
+            console.log('页面状态恢复完成，当前状态:', currentPageState);
+        }
         
         // 自选股相关函数
         
@@ -6049,32 +6798,53 @@
         
 
         
+        function showMarketOverview() {
+            console.log('显示市场概况页面');
+            
+            // 隐藏所有其他页面
+            resetPageState();
+            
+            // 显示欢迎页面（市场概况）
+            const welcomeSection = document.getElementById('welcomeSection');
+            if (welcomeSection) welcomeSection.style.display = 'block';
+            
+            // 更新页面状态
+            updatePageState('welcome');
+            
+            console.log('市场概况页面显示完成，当前页面状态:', currentPageState);
+        }
+        
         function showWatchlist() {
-            // 记住当前页面状态
+            // 重置自选股自动关闭标志
+            window.autoCloseWatchlistAfterAnalysis = false;
+            
+            // 记住当前页面状态，但不立即更新
+            let previousState = 'welcome';
             if (document.getElementById('chartContainer').style.display === 'block') {
-                currentPageState = 'analysis';
+                previousState = 'analysis';
             } else if (document.getElementById('welcomeSection').style.display === 'block') {
-                currentPageState = 'welcome';
+                previousState = 'welcome';
             }
             
-            // 隐藏所有其他区域
-            const welcomeSection = document.getElementById('welcomeSection');
-            const chartContainer = document.getElementById('chartContainer');
-            const stockInfoSection = document.getElementById('stockInfoSection');
+            // 保存之前的页面状态，用于关闭时恢复
+            window.previousPageBeforeWatchlist = previousState;
             
-            if (welcomeSection) welcomeSection.style.display = 'none';
-            if (chartContainer) chartContainer.style.display = 'none';
-            if (stockInfoSection) stockInfoSection.style.display = 'none';
+            // 使用新的页面状态管理
+            resetPageState();
             
             // 显示自选股区域
             const watchlistSection = document.getElementById('watchlistSection');
             watchlistSection.style.display = 'block';
             
             // 更新状态
-            currentPageState = 'watchlist';
+            updatePageState('watchlist');
             
             // 每次显示自选股都重新从后台获取最新数据
             loadWatchlistData();
+            
+            // 调试信息
+            console.log('显示自选股列表，当前页面状态:', currentPageState, '之前状态:', previousState);
+            console.log('自选股自动关闭标志:', window.autoCloseWatchlistAfterAnalysis);
         }
 
         function hideWatchlist() {
@@ -6082,25 +6852,35 @@
             const watchlistSection = document.getElementById('watchlistSection');
             watchlistSection.style.display = 'none';
             
-            // 根据之前的状态恢复页面
-            if (currentPageState === 'analysis') {
-                // 恢复到分析结果页面
-                const chartContainer = document.getElementById('chartContainer');
-                const stockInfoSection = document.getElementById('stockInfoSection');
-                if (chartContainer) chartContainer.style.display = 'block';
-                if (stockInfoSection) stockInfoSection.style.display = 'block';
-                console.log('恢复到分析结果页面');
-            } else {
-                // 恢复到欢迎页面
-                const welcomeSection = document.getElementById('welcomeSection');
-                if (welcomeSection) {
-                    welcomeSection.style.display = 'block';
+            // 确保黑名单列表也被隐藏
+            const blacklistSection = document.getElementById('blacklistSection');
+            if (blacklistSection) blacklistSection.style.display = 'none';
+            
+            // 快速恢复到之前的页面状态
+            if (window.previousPageBeforeWatchlist) {
+                console.log('快速恢复到之前的页面状态:', window.previousPageBeforeWatchlist);
+                updatePageState(window.previousPageBeforeWatchlist);
+                
+                // 立即显示对应的页面
+                if (window.previousPageBeforeWatchlist === 'analysis') {
+                    const chartContainer = document.getElementById('chartContainer');
+                    const stockInfoSection = document.getElementById('stockInfoSection');
+                    if (chartContainer) chartContainer.style.display = 'block';
+                    if (stockInfoSection) stockInfoSection.style.display = 'block';
+                } else if (window.previousPageBeforeWatchlist === 'welcome') {
+                    const welcomeSection = document.getElementById('welcomeSection');
+                    if (welcomeSection) welcomeSection.style.display = 'block';
                 }
-                console.log('恢复到欢迎页面');
+                
+                // 清除保存的状态
+                window.previousPageBeforeWatchlist = null;
+            } else {
+                console.log('没有保存的之前状态，使用默认恢复逻辑');
+                // 如果没有保存的状态，使用默认的恢复逻辑
+                restorePageState();
             }
             
-            // 注意：不要重置状态，保持当前状态
-            // 这样如果用户再次查看自选股，状态仍然是正确的
+            console.log('隐藏自选股列表完成，当前页面状态:', currentPageState);
         }
 
         function loadWatchlistData() {
@@ -6130,11 +6910,245 @@
                 });
         }
 
+        // 黑名单相关函数
+        function showBlacklist() {
+            // 重置自选股自动关闭标志
+            window.autoCloseWatchlistAfterAnalysis = false;
+            
+            // 记住当前页面状态，但不立即更新
+            let previousState = 'welcome';
+            if (document.getElementById('chartContainer').style.display === 'block') {
+                previousState = 'analysis';
+            } else if (document.getElementById('welcomeSection').style.display === 'block') {
+                previousState = 'welcome';
+            }
+            
+            // 保存之前的页面状态，用于关闭时恢复
+            window.previousPageBeforeBlacklist = previousState;
+            
+            // 使用新的页面状态管理
+            resetPageState();
+            
+            // 显示黑名单区域
+            const blacklistSection = document.getElementById('blacklistSection');
+            blacklistSection.style.display = 'block';
+            
+            // 更新状态
+            updatePageState('blacklist');
+            
+            // 每次显示黑名单都重新从后台获取最新数据
+            loadBlacklistData();
+            
+            // 调试信息
+            console.log('显示黑名单列表，当前页面状态:', currentPageState, '之前状态:', previousState);
+        }
+
+        function hideBlacklist() {
+            // 隐藏黑名单区域
+            const blacklistSection = document.getElementById('blacklistSection');
+            blacklistSection.style.display = 'none';
+            
+            // 确保自选股列表也被隐藏
+            const watchlistSection = document.getElementById('watchlistSection');
+            if (watchlistSection) watchlistSection.style.display = 'none';
+            
+            // 快速恢复到之前的页面状态
+            if (window.previousPageBeforeBlacklist) {
+                console.log('快速恢复到之前的页面状态:', window.previousPageBeforeBlacklist);
+                updatePageState(window.previousPageBeforeBlacklist);
+                
+                // 立即显示对应的页面
+                if (window.previousPageBeforeBlacklist === 'analysis') {
+                    const chartContainer = document.getElementById('chartContainer');
+                    const stockInfoSection = document.getElementById('stockInfoSection');
+                    if (chartContainer) chartContainer.style.display = 'block';
+                    if (stockInfoSection) stockInfoSection.style.display = 'block';
+                } else if (window.previousPageBeforeBlacklist === 'welcome') {
+                    const welcomeSection = document.getElementById('welcomeSection');
+                    if (welcomeSection) welcomeSection.style.display = 'block';
+                }
+                
+                // 清除保存的状态
+                window.previousPageBeforeBlacklist = null;
+            } else {
+                console.log('没有保存的之前状态，使用默认恢复逻辑');
+                // 如果没有保存的状态，使用默认的恢复逻辑
+                restorePageState();
+            }
+            
+            console.log('隐藏黑名单列表完成，当前页面状态:', currentPageState);
+        }
+
+        function loadBlacklistData() {
+            // 显示加载状态
+            const tableBody = document.getElementById('blacklistTableBody');
+            tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">正在加载黑名单数据...</td></tr>';
+            
+            // 调用后端API获取自选股数据，然后过滤出黑名单股票
+            fetch('/api/watchlist/all')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.data) {
+                        // 过滤出黑名单股票（type=3）
+                        const blacklistData = data.data.filter(stock => stock.stockType === 3);
+                        console.log('黑名单数据:', blacklistData);
+                        displayBlacklistData(blacklistData);
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + (data.message || '未知错误') + '</tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('加载黑名单数据失败:', error);
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + error.message + '</tr>';
+                });
+        }
+
+        function displayBlacklistData(blacklistData) {
+            const tableBody = document.getElementById('blacklistTableBody');
+            
+            if (!blacklistData || blacklistData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">暂无黑名单股票</td></tr>';
+                return;
+            }
+            
+            // 保存原始数据
+            window.originalBlacklistData = blacklistData;
+            
+            // 应用排序
+            if (window.currentBlacklistSortField) {
+                sortBlacklistData(blacklistData, window.currentBlacklistSortField, window.currentBlacklistSortDirection);
+            }
+            
+            let html = '';
+            blacklistData.forEach(stock => {
+                const stockTypeText = '黑名单';
+                const stockTypeClass = 'stock-type-3';
+                
+                html += `
+                    <tr>
+                        <td>${stock.stockCode}</td>
+                        <td>${stock.stockName}</td>
+                        <td><span class="stock-type-badge ${stockTypeClass}">${stockTypeText}</span></td>
+                        <td>${formatPeTtm(stock.peTtm)}</td>
+                        <td>${formatNumber(stock.roe)}%</td>
+                        <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
+                        <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
+                        <td>${formatNumber(stock.peScore)}</td>
+                        <td>${stock.updatedTime ? stock.updatedTime.substring(0, 10) : '-'}</td>
+                        <td>
+                            <button class="detail-btn" onclick="analyzeStockFromBlacklist('${stock.stockCode}', '${stock.stockName}')">
+                                查看详情
+                            </button>
+                            <button class="remove-blacklist-btn" onclick="removeFromBlacklist('${stock.stockCode}', '${stock.stockName}')">
+                                移除
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = html;
+        }
+
+        // 黑名单排序相关函数
+        function sortBlacklistTable(field) {
+            // 如果点击的是同一个字段，切换排序方向
+            if (window.currentBlacklistSortField === field) {
+                window.currentBlacklistSortDirection = window.currentBlacklistSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // 新字段，默认降序（从大到小）
+                window.currentBlacklistSortField = field;
+                window.currentBlacklistSortDirection = 'desc';
+            }
+            
+            // 更新表头样式
+            updateBlacklistSortHeaders(field, window.currentBlacklistSortDirection);
+            
+            // 重新显示数据（会应用排序）
+            if (window.originalBlacklistData && window.originalBlacklistData.length > 0) {
+                displayBlacklistData(window.originalBlacklistData);
+            }
+        }
+
+        function sortBlacklistData(data, field, direction) {
+            data.sort((a, b) => {
+                let valueA = a[field];
+                let valueB = b[field];
+                
+                // 处理空值
+                if (valueA === null || valueA === undefined || valueA === '') valueA = 0;
+                if (valueB === null || valueB === undefined || valueB === '') valueB = 0;
+                
+                // 转换为数字进行比较
+                valueA = parseFloat(valueA) || 0;
+                valueB = parseFloat(valueB) || 0;
+                
+                if (direction === 'asc') {
+                    return valueA - valueB;
+                } else {
+                    return valueB - valueA;
+                }
+            });
+        }
+
+        function updateBlacklistSortHeaders(activeField, direction) {
+            // 清除所有排序样式
+            document.querySelectorAll('#blacklistSection .sortable').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                const icon = th.querySelector('.sort-icon');
+                if (icon) {
+                    icon.textContent = '↕';
+                }
+            });
+            
+            // 设置当前排序字段的样式
+            const activeTh = document.querySelector(`#blacklistSection [data-field="${activeField}"]`);
+            if (activeTh) {
+                activeTh.classList.add(direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                const icon = activeTh.querySelector('.sort-icon');
+                if (icon) {
+                    icon.textContent = direction === 'asc' ? '↑' : '↓';
+                }
+            }
+        }
+
+        // 从黑名单启动股票分析
+        function analyzeStockFromBlacklist(stockCode, stockName) {
+            console.log('从黑名单启动分析:', stockCode, stockName);
+            
+            // 隐藏黑名单区域
+            hideBlacklist();
+            
+            // 设置股票代码到输入框
+            const stockSymbolInput = document.getElementById('stockSymbol');
+            if (stockSymbolInput) {
+                stockSymbolInput.value = stockCode;
+                console.log('已设置股票代码到输入框:', stockCode);
+            }
+            
+            // 设置全局股票代码
+            window.currentStockCode = stockCode;
+            console.log('已设置全局股票代码:', stockCode);
+            
+            // 设置标志，表示分析完成后需要关闭黑名单列表
+            window.autoCloseBlacklistAfterAnalysis = true;
+            console.log('已设置黑名单自动关闭标志');
+            
+            // 调用标准的分析函数，确保加载动画和页面切换逻辑完全一致
+            console.log('开始调用analyzeStock函数...');
+            analyzeStock();
+        }
+
         // 全局变量存储当前类型过滤器和原始数据
         let currentTypeFilter = 'all';
         let originalWatchlistData = [];
         let currentSortField = '';
-        let currentSortDirection = 'asc';
+        let currentSortDirection = 'desc';
 
         /**
          * 排序数据
@@ -6168,9 +7182,9 @@
             if (currentSortField === field) {
                 currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
             } else {
-                // 新字段，默认升序
+                // 新字段，默认降序（从大到小）
                 currentSortField = field;
-                currentSortDirection = 'asc';
+                currentSortDirection = 'desc';
             }
             
             // 更新表头样式
@@ -6425,18 +7439,21 @@
          * 根据类型过滤器过滤数据
          */
         function filterDataByType(data, typeFilter) {
+            // 首先过滤掉黑名单股票（type=3）
+            const nonBlacklistData = data.filter(stock => stock.stockType !== 3);
+            
             switch (typeFilter) {
                 case 'all':
                     // 显示所有自选股（type=1和type=2）
-                    return data.filter(stock => stock.stockType === 1 || stock.stockType === 2);
+                    return nonBlacklistData.filter(stock => stock.stockType === 1 || stock.stockType === 2);
                 case 'portfolio':
                     // 只显示持仓股（type=2）
-                    return data.filter(stock => stock.stockType === 2);
+                    return nonBlacklistData.filter(stock => stock.stockType === 2);
                 case 'observation':
                     // 只显示观察股（type=1）
-                    return data.filter(stock => stock.stockType === 1);
+                    return nonBlacklistData.filter(stock => stock.stockType === 1);
                 default:
-                    return data.filter(stock => stock.stockType === 1 || stock.stockType === 2);
+                    return nonBlacklistData.filter(stock => stock.stockType === 1 || stock.stockType === 2);
             }
         }
 
@@ -6476,6 +7493,7 @@
             switch (stockType) {
                 case 1: return '观察股';
                 case 2: return '持仓股';
+                case 3: return '黑名单';
                 default: return '未知';
             }
         }
@@ -6522,17 +7540,21 @@
             const stockSymbolInput = document.getElementById('stockSymbol');
             if (stockSymbolInput) {
                 stockSymbolInput.value = stockCode;
+                console.log('已设置股票代码到输入框:', stockCode);
             }
             
             // 设置全局股票代码
             window.currentStockCode = stockCode;
+            console.log('已设置全局股票代码:', stockCode);
             
             // 设置标志，表示分析完成后需要关闭自选股列表
             window.autoCloseWatchlistAfterAnalysis = true;
+            console.log('已设置自选股自动关闭标志');
             
-                    // 调用标准的分析函数，确保加载动画和页面切换逻辑完全一致
-        analyzeStock();
-    }
+            // 调用标准的分析函数，确保加载动画和页面切换逻辑完全一致
+            console.log('开始调用analyzeStock函数...');
+            analyzeStock();
+        }
 
     /**
      * 从自选股中移除股票（将type改为0）

@@ -41,9 +41,9 @@ public class StockWatchlistController {
                 return ResponseEntity.badRequest().body(response);
             }
             
-            if (stockWatchlist.getStockType() == null || (stockWatchlist.getStockType() != 1 && stockWatchlist.getStockType() != 2)) {
+            if (stockWatchlist.getStockType() == null || (stockWatchlist.getStockType() != 0 && stockWatchlist.getStockType() != 1 && stockWatchlist.getStockType() != 2 && stockWatchlist.getStockType() != 3)) {
                 response.put("success", false);
-                response.put("message", "股票类型必须为1(观察股)或2(持仓股)");
+                response.put("message", "股票类型必须为0(普通股票)、1(观察股)、2(持仓股)或3(黑名单)");
                 return ResponseEntity.badRequest().body(response);
             }
             
@@ -223,9 +223,9 @@ public class StockWatchlistController {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            if (stockType != 1 && stockType != 2) {
+            if (stockType != 0 && stockType != 1 && stockType != 2 && stockType != 3) {
                 response.put("success", false);
-                response.put("message", "股票类型必须为1(观察股)或2(持仓股)");
+                response.put("message", "股票类型必须为0(普通股票)、1(观察股)、2(持仓股)或3(黑名单)");
                 return ResponseEntity.badRequest().body(response);
             }
             List<StockWatchlist> stocks = stockWatchlistService.getStocksByType(stockType);
