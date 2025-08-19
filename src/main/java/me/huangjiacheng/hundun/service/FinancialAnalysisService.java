@@ -625,9 +625,7 @@ public class FinancialAnalysisService {
             }
             
             StockFinancialHkBalanceSheet latestBalanceSheet = (StockFinancialHkBalanceSheet) latestData.get("balanceSheet");
-            StockFinancialHkIncomeStatement latestIncomeStatement = (StockFinancialHkIncomeStatement) latestData.get("incomeStatement");
-            StockFinancialHkCashFlow latestCashFlow = (StockFinancialHkCashFlow) latestData.get("cashFlow");
-            
+            StockFinancialHkIncomeStatement latestIncomeStatement = (StockFinancialHkIncomeStatement) latestData.get("incomeStatement");            
             if (latestBalanceSheet == null || latestIncomeStatement == null) {
                 return null;
             }
@@ -782,82 +780,6 @@ public class FinancialAnalysisService {
         assetRatioMap.put("投资性资产占比", investmentAssets / totalAssets);
 
         assetRatios.put(latestPeriod, assetRatioMap);
-        return assetRatios;
-    }
-
-    /**
-     * 计算资产比率数据（保留原方法以兼容其他调用）
-     * 
-     * @param periodData 财务数据
-     * @return 资产比率数据
-     */
-    private Map<String, Map<String, Double>> calculateAssetRatios(Map<String, Map<String, Object>> periodData) {
-        Map<String, Map<String, Double>> assetRatios = new TreeMap<>(Collections.reverseOrder());
-        
-        for (Map.Entry<String, Map<String, Object>> periodEntry : periodData.entrySet()) {
-            String period = periodEntry.getKey();
-            Map<String, Object> data = periodEntry.getValue();
-            StockFinancialDebtThs debt = (StockFinancialDebtThs) data.get("balanceSheet");
-            if (debt == null) continue;
-
-            // 解析基础数据
-            double totalAssets = parseFinancialValue(debt.getAssetTotal());
-            double totalDebt = parseFinancialValue(debt.getDebtTotal());
-            double currentAssets = parseFinancialValue(debt.getCurrentAssetsTotal());
-            double cash = parseFinancialValue(debt.getCash());
-            double lendingFunds = parseFinancialValue(debt.getLendingFunds());
-            double inventory = parseFinancialValue(debt.getInventory());
-            double fixedAssets = parseFinancialValue(debt.getFixedAssetsTotal());
-            double constructionInProgress = parseFinancialValue(debt.getConstructionInProgressTotal());
-            double projectMaterials = parseFinancialValue(debt.getProjectMaterials());
-            double goodwill = parseFinancialValue(debt.getGoodwill());
-            double intangibleAssets = parseFinancialValue(debt.getIntangibleAssets());
-            double longTermEquityInvestments = parseFinancialValue(debt.getLongTermEquityInvestments());
-            double otherEquityInvestments = parseFinancialValue(debt.getOtherEquityInvestments());
-            double investmentProperty = parseFinancialValue(debt.getInvestmentProperty());
-            double receivables = parseFinancialValue(debt.getReceivables());
-            double prepayments = parseFinancialValue(debt.getPrepayments());
-            double totalCash = parseFinancialValue(debt.getTotalCash());
-            double tradingFinancialAssets = parseFinancialValue(debt.getTradingFinancialAssets());
-            double availableForSaleFinancialAssets = parseFinancialValue(debt.getAvailableForSaleFinancialAssets());
-            double heldToMaturityInvestments = parseFinancialValue(debt.getHeldToMaturityInvestments());
-            double otherNonCurrentFinancialAssets = parseFinancialValue(debt.getOtherNonCurrentFinancialAssets());
-
-            // 资产结构分析
-            Map<String, Double> assetRatioMap = new HashMap<>();
-            assetRatioMap.put("货币资金（含拆出资金）占比", (cash + lendingFunds) / totalAssets);
-            assetRatioMap.put("存货占比", inventory / totalAssets);
-            assetRatioMap.put("固定资产和在建工程占比", (fixedAssets + constructionInProgress + projectMaterials) / totalAssets);
-            assetRatioMap.put("商誉占比", goodwill / totalAssets);
-            assetRatioMap.put("无形资产占比", intangibleAssets / totalAssets);
-            assetRatioMap.put("长期股权投资占比", longTermEquityInvestments / totalAssets);
-            assetRatioMap.put("其他权益工具投资占比", otherEquityInvestments / totalAssets);
-            assetRatioMap.put("投资性房地产占比", investmentProperty / totalAssets);
-            assetRatioMap.put("应收账款占比", receivables / totalAssets);
-            assetRatioMap.put("预付款项占比", prepayments / totalAssets);
-            assetRatioMap.put("流动资产占比", currentAssets / totalAssets);
-            
-            // 计算资产质量得分需要的比率
-            assetRatioMap.put("两应收一预付占比", (receivables + prepayments) / totalAssets);
-            assetRatioMap.put("商誉和无形资产占比", (goodwill + intangibleAssets) / totalAssets);
-            
-            // 净现金比率 = 净现金 / 总资产
-            Double netCashRatio = (totalCash + lendingFunds - totalDebt) / totalAssets;
-            assetRatioMap.put("净现金比率", netCashRatio);
-            
-            // 投资性资产占比
-            double touZiXingZiChan = tradingFinancialAssets
-                    + availableForSaleFinancialAssets
-                    + heldToMaturityInvestments
-                    + longTermEquityInvestments
-                    + otherEquityInvestments
-                    + otherNonCurrentFinancialAssets
-                    + investmentProperty;
-            assetRatioMap.put("投资性资产占比", touZiXingZiChan / totalAssets);
-
-            assetRatios.put(period, assetRatioMap);
-        }
-        
         return assetRatios;
     }
 
