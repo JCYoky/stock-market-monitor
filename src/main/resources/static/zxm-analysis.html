@@ -1789,6 +1789,10 @@
                         <div class="info-label">市盈率</div>
                         <div class="info-value" id="stockPe">-</div>
                     </div>
+                    <div class="stock-info-item other-info">
+                        <div class="info-label">最新财报时间</div>
+                        <div class="info-value" id="stockLatestReport">-</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2050,7 +2054,16 @@
 
                     // 显示股票基本信息
                     if (stockInfo && stockInfo.code) {
-                        displayStockInfo(stockInfo);
+                        // 从财务分析数据中获取最新报告期
+                        let latestReportPeriod = '-';
+                        if (analysisData && analysisData.success && analysisData.periodData) {
+                            const periods = Object.keys(analysisData.periodData);
+                            if (periods.length > 0) {
+                                // 获取最新的报告期
+                                latestReportPeriod = periods[0]; // 由于periodData是TreeMap倒序，第一个就是最新的
+                            }
+                        }
+                        displayStockInfo(stockInfo, latestReportPeriod);
                     } else {
                         console.warn('股票基本信息获取失败或数据不完整:', stockInfo);
                     }
@@ -2108,7 +2121,7 @@
                 });
         }
 
-        function displayStockInfo(stockInfo) {
+        function displayStockInfo(stockInfo, latestReportPeriod = '-') {
             try {
                 // 验证输入参数
                 if (!stockInfo || !stockInfo.code) {
@@ -2146,7 +2159,8 @@
                     'stockCirculatingMarketValue': formatMarketValue(stockInfo.circulatingMarketValue),
                     'stockListingDate': formatDate(stockInfo.listingDate),
                     'stockRoe': stockInfo.roe || '-',
-                    'stockPe': stockInfo.pe || '-'
+                    'stockPe': stockInfo.pe || '-',
+                    'stockLatestReport': latestReportPeriod
                 };
                 
                 // 批量更新DOM元素
