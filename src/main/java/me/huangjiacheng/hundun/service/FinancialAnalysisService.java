@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.*;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -2063,6 +2064,9 @@ public class FinancialAnalysisService {
             
             // 获取数据库中最新的市危率数据日期
             String latestDate = getLatestMarketRiskRatioDate();
+            String todayDate = LocalDate.now().toString();
+            System.out.println("latestDate: " + latestDate);
+            System.out.println("todayDate: " + todayDate);
             if (latestDate == null) {
                 System.out.println("数据库中暂无市危率数据，将从2005-01-01开始计算");
                 latestDate = "2005-01-01";
@@ -2073,9 +2077,13 @@ public class FinancialAnalysisService {
                 // List<StockValuationData> valuationDataList = loboDataService.batchGetStockValuationData(stockCode);
                 if (valuationDataList != null && !valuationDataList.isEmpty()) {
                     StockValuationData latestValuation = valuationDataList.get(valuationDataList.size() - 1);
-                    if (latestValuation.getDate() != null && latestValuation.getDate().equals(getTodayDate())) {
-                        System.out.println("股票000651的最新市盈率数据日期是" + latestValuation.getDate());
-                        System.out.println("最新数据日期已经是今天(" + getTodayDate() + ")，可以计算今日之前的市危率。");
+                    System.out.println("latestValuation.getDate(): " + latestValuation.getDate());
+                    
+                    // 标准化日期格式进行比较
+                    String normalizedLatestDate = normalizeDate(latestValuation.getDate());
+                    if (normalizedLatestDate != null && normalizedLatestDate.equals(todayDate)) {
+                        System.out.println("股票000651的最新市盈率数据日期是" + normalizedLatestDate);
+                        System.out.println("最新数据日期已经是今天(" + todayDate + ")，可以计算今日之前的市危率。");
                         
                         // 检查当前时间，如果下午3点之前不执行
                         LocalTime currentTime = LocalTime.now();
@@ -2086,7 +2094,7 @@ public class FinancialAnalysisService {
                         }
                         System.out.println("当前时间(" + currentTime.format(DateTimeFormatter.ofPattern("HH:mm")) + ")已过下午3点，可以计算市危率。");
                     } else {
-                        System.out.println("最新数据日期在今天之前(" + latestValuation.getDate() + ")，暂无法计算今日市危率。");
+                        System.out.println("最新数据日期在今天之前(" + normalizedLatestDate + ")，暂无法计算今日市危率。");
                         return;
                     }
                 }
@@ -2350,20 +2358,6 @@ public class FinancialAnalysisService {
         } catch (Exception e) {
             System.err.println("比较日期时发生错误: " + e.getMessage());
             return false;
-        }
-    }
-
-    /**
-     * 获取今天的日期字符串（YYYY-MM-DD格式）
-     */
-    private String getTodayDate() {
-        try {
-            java.time.LocalDate today = java.time.LocalDate.now();
-            return today.toString();
-        } catch (Exception e) {
-            System.err.println("获取今天日期时发生错误: " + e.getMessage());
-            // 如果出错，返回一个默认日期
-            return "2010-01-01";
         }
     }
 
