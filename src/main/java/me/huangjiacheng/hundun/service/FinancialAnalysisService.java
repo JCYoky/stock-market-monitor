@@ -2085,9 +2085,9 @@ public class FinancialAnalysisService {
     }
 
     /**
-     * 定时任务：工作日（周一到周五）下午5:30自动计算市危率
+     * 定时任务：工作日（周一到周五）下午6:00自动计算市危率
      */
-    @Scheduled(cron = "0 30 17 * * MON-FRI")
+    @Scheduled(cron = "0 0 18 * * MON-FRI")
     public void scheduledCalculateMarketRiskRatio() {
         System.out.println("定时任务启动：开始计算市危率...");
         calculateAndSaveMarketRiskRatio();

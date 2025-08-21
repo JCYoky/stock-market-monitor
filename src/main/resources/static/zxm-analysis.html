@@ -1583,6 +1583,27 @@
             background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
         }
 
+        /* 主营业务信息项样式 */
+        .stock-info-item.main-business-info {
+            grid-column: 1 / -1;
+            border-left: 3px solid #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            padding: 16px 20px;
+        }
+
+        .stock-info-item.main-business-info .info-label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #065f46;
+        }
+
+        .stock-info-item.main-business-info .info-value {
+            line-height: 1.6;
+            text-align: justify;
+            color: #047857;
+            font-size: 0.95rem;
+        }
+
         /* 全宽信息项样式 */
         .stock-info-item.full-width {
             grid-column: 1 / -1;
@@ -1987,6 +2008,12 @@
                     </div>
                 </div>
                 <div class="stock-info-grid">
+                    <!-- 主营业务组 - 第一行，占四列 -->
+                    <div class="stock-info-item main-business-info" style="grid-column: 1 / -1;">
+                        <div class="info-label">主营业务</div>
+                        <div class="info-value" id="stockMainOperationBusiness">-</div>
+                    </div>
+                    
                     <!-- 基本信息组 -->
                     <div class="stock-info-item basic-info">
                         <div class="info-label">股票代码</div>
@@ -2503,12 +2530,13 @@
                     stockInfoTitleElement.textContent = `${stockInfo.name || stockInfo.code} - 基本信息`;
                 }
 
-            // 更新各个信息字段
+                            // 更新各个信息字段
                 const elements = {
                     'stockCode': stockInfo.code || '-',
                     'stockName': stockInfo.name || '-',
                     'stockPrice': stockInfo.latestPrice ? `¥${stockInfo.latestPrice}` : '-',
                     'stockIndustry': stockInfo.industry || '-',
+                    'stockMainOperationBusiness': stockInfo.mainOperationBusiness || '-',
                     'stockTotalShares': formatShares(stockInfo.totalShares),
                     'stockCirculatingShares': formatShares(stockInfo.circulatingShares),
                     'stockTotalMarketValue': formatMarketValue(stockInfo.totalMarketValue),

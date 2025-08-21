@@ -1,0 +1,1 @@
+select * FROM market_risk_ratio where date = '2025-08-20';

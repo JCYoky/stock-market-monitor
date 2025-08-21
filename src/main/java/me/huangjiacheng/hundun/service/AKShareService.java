@@ -420,6 +420,17 @@ public class AKShareService {
             System.err.println("解析stock_individual_info_em数据失败: " + e.getMessage());
         }
         
+        // 获取主营业务信息
+        try {
+            String mainBusiness = getStockMainOperationBusiness(symbol);
+            if (mainBusiness != null && !mainBusiness.trim().isEmpty()) {
+                stockInfo.setMainOperationBusiness(mainBusiness);
+                System.out.println("成功设置主营业务信息");
+            }
+        } catch (Exception e) {
+            System.err.println("获取主营业务信息失败: " + e.getMessage());
+        }
+        
         // 计算ROE和市盈率
         try {
             calculateROEAndPE(stockInfo);
@@ -1620,6 +1631,45 @@ public class AKShareService {
             System.err.println("解析港股历史换手率数据失败: " + e.getMessage());
             e.printStackTrace();
             return result;
+        }
+    }
+
+    /**
+     * 获取股票主营介绍
+     * @param symbol 股票代码
+     * @return 主营介绍信息
+     */
+    public String getStockMainOperationBusiness(String symbol) {
+        System.out.println("开始获取股票主营介绍，股票代码: " + symbol);
+        
+        AKShareRequest request = new AKShareRequest();
+        request.setSymbol(symbol);
+        
+        String json = akShareClient.fetchData("stock_zyjs_ths", request);
+        if (json == null) {
+            System.err.println("获取股票主营介绍失败: 返回数据为空");
+            return null;
+        }
+        
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isArray() && root.size() > 0) {
+                // 获取第一个元素的主营业务
+                JsonNode firstNode = root.get(0);
+                String mainBusiness = getJsonValue(firstNode, "主营业务");
+                if (mainBusiness != null && !mainBusiness.trim().isEmpty()) {
+                    System.out.println("成功获取股票主营业务: " + mainBusiness.substring(0, Math.min(100, mainBusiness.length())) + "...");
+                    return mainBusiness;
+                }
+            }
+            
+            System.err.println("解析股票主营业务失败: 数据格式异常");
+            return null;
+            
+        } catch (Exception e) {
+            System.err.println("解析股票主营介绍失败: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 

@@ -12,6 +12,7 @@ public class StockInfo {
     private String totalMarketValue; // 总市值
     private String circulatingMarketValue; // 流通市值
     private String industry;       // 行业
+    private String mainOperationBusiness; // 主营业务
     private String listingDate;    // 上市时间
     private String roe;            // ROE (净资产收益率)
     private String pe;             // 市盈率
@@ -85,6 +86,14 @@ public class StockInfo {
         this.industry = industry;
     }
     
+    public String getMainOperationBusiness() {
+        return mainOperationBusiness;
+    }
+    
+    public void setMainOperationBusiness(String mainOperationBusiness) {
+        this.mainOperationBusiness = mainOperationBusiness;
+    }
+    
     public String getListingDate() {
         return listingDate;
     }
@@ -120,6 +129,7 @@ public class StockInfo {
                 ", totalMarketValue='" + totalMarketValue + '\'' +
                 ", circulatingMarketValue='" + circulatingMarketValue + '\'' +
                 ", industry='" + industry + '\'' +
+                ", mainOperationBusiness='" + mainOperationBusiness + '\'' +
                 ", listingDate='" + listingDate + '\'' +
                 ", roe='" + roe + '\'' +
                 ", pe='" + pe + '\'' +
