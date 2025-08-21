@@ -1513,7 +1513,7 @@
 
         .stock-info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 12px;
             max-width: 1000px;
             margin: 0 auto;
@@ -1585,10 +1585,25 @@
 
         /* 主营业务信息项样式 */
         .stock-info-item.main-business-info {
-            grid-column: 1 / -1;
+            grid-column: 1 / 5;
             border-left: 3px solid #10b981;
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            padding: 16px 20px;
+            padding: 20px;
+        }
+
+        .business-info-header {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .business-section {
+            flex: 1;
+        }
+
+        .business-section:first-child {
+            border-right: 1px solid #d1fae5;
+            padding-right: 24px;
         }
 
         .stock-info-item.main-business-info .info-label {
@@ -1603,6 +1618,8 @@
             color: #047857;
             font-size: 0.95rem;
         }
+
+
 
         /* 全宽信息项样式 */
         .stock-info-item.full-width {
@@ -2008,10 +2025,18 @@
                     </div>
                 </div>
                 <div class="stock-info-grid">
-                    <!-- 主营业务组 - 第一行，占四列 -->
-                    <div class="stock-info-item main-business-info" style="grid-column: 1 / -1;">
-                        <div class="info-label">主营业务</div>
-                        <div class="info-value" id="stockMainOperationBusiness">-</div>
+                    <!-- 第一行：主营业务和产品名称合并为一个方块，占满四列 -->
+                    <div class="stock-info-item main-business-info" style="grid-column: 1 / 5;">
+                        <div class="business-info-header">
+                            <div class="business-section">
+                                <div class="info-label">主营业务</div>
+                                <div class="info-value" id="stockMainOperationBusiness">-</div>
+                            </div>
+                            <div class="business-section">
+                                <div class="info-label">产品名称</div>
+                                <div class="info-value" id="stockProductName">-</div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- 基本信息组 -->
@@ -2537,6 +2562,7 @@
                     'stockPrice': stockInfo.latestPrice ? `¥${stockInfo.latestPrice}` : '-',
                     'stockIndustry': stockInfo.industry || '-',
                     'stockMainOperationBusiness': stockInfo.mainOperationBusiness || '-',
+                    'stockProductName': stockInfo.productName || '-',
                     'stockTotalShares': formatShares(stockInfo.totalShares),
                     'stockCirculatingShares': formatShares(stockInfo.circulatingShares),
                     'stockTotalMarketValue': formatMarketValue(stockInfo.totalMarketValue),

@@ -420,15 +420,33 @@ public class AKShareService {
             System.err.println("解析stock_individual_info_em数据失败: " + e.getMessage());
         }
         
-        // 获取主营业务信息
+        // 获取主营业务、产品类型和产品名称信息
         try {
-            String mainBusiness = getStockMainOperationBusiness(symbol);
-            if (mainBusiness != null && !mainBusiness.trim().isEmpty()) {
-                stockInfo.setMainOperationBusiness(mainBusiness);
-                System.out.println("成功设置主营业务信息");
+            java.util.Map<String, String> businessInfo = getStockMainOperationBusinessWithProducts(symbol);
+            if (businessInfo != null && !businessInfo.isEmpty()) {
+                // 设置主营业务
+                String mainBusiness = businessInfo.get("mainOperationBusiness");
+                if (mainBusiness != null && !mainBusiness.trim().isEmpty()) {
+                    stockInfo.setMainOperationBusiness(mainBusiness);
+                    System.out.println("成功设置主营业务信息");
+                }
+                
+                // 设置产品类型
+                String productType = businessInfo.get("productType");
+                if (productType != null && !productType.trim().isEmpty()) {
+                    stockInfo.setProductType(productType);
+                    System.out.println("成功设置产品类型信息");
+                }
+                
+                // 设置产品名称
+                String productName = businessInfo.get("productName");
+                if (productName != null && !productName.trim().isEmpty()) {
+                    stockInfo.setProductName(productName);
+                    System.out.println("成功设置产品名称信息");
+                }
             }
         } catch (Exception e) {
-            System.err.println("获取主营业务信息失败: " + e.getMessage());
+            System.err.println("获取主营业务和产品信息失败: " + e.getMessage());
         }
         
         // 计算ROE和市盈率
@@ -1668,6 +1686,66 @@ public class AKShareService {
             
         } catch (Exception e) {
             System.err.println("解析股票主营介绍失败: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 获取股票主营介绍、产品类型和产品名称
+     * @param symbol 股票代码
+     * @return 包含主营介绍、产品类型和产品名称的Map，如果获取失败返回null
+     */
+    public java.util.Map<String, String> getStockMainOperationBusinessWithProducts(String symbol) {
+        System.out.println("开始获取股票主营介绍和产品信息，股票代码: " + symbol);
+        
+        AKShareRequest request = new AKShareRequest();
+        request.setSymbol(symbol);
+        
+        String json = akShareClient.fetchData("stock_zyjs_ths", request);
+        if (json == null) {
+            System.err.println("获取股票主营介绍和产品信息失败: 返回数据为空");
+            return null;
+        }
+        
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isArray() && root.size() > 0) {
+                JsonNode firstNode = root.get(0);
+                java.util.Map<String, String> result = new HashMap<>();
+                
+                // 获取主营业务
+                String mainBusiness = getJsonValue(firstNode, "主营业务");
+                if (mainBusiness != null && !mainBusiness.trim().isEmpty()) {
+                    result.put("mainOperationBusiness", mainBusiness);
+                    System.out.println("成功获取股票主营业务: " + mainBusiness.substring(0, Math.min(100, mainBusiness.length())) + "...");
+                }
+                
+                // 获取产品类型
+                String productType = getJsonValue(firstNode, "产品类型");
+                if (productType != null && !productType.trim().isEmpty()) {
+                    result.put("productType", productType);
+                    System.out.println("成功获取产品类型: " + productType);
+                }
+                
+                // 获取产品名称
+                String productName = getJsonValue(firstNode, "产品名称");
+                if (productName != null && !productName.trim().isEmpty()) {
+                    result.put("productName", productName);
+                    System.out.println("成功获取产品名称: " + productName);
+                }
+                
+                if (!result.isEmpty()) {
+                    System.out.println("成功获取股票信息，共 " + result.size() + " 个字段");
+                    return result;
+                }
+            }
+            
+            System.err.println("解析股票主营介绍和产品信息失败: 数据格式异常");
+            return null;
+            
+        } catch (Exception e) {
+            System.err.println("解析股票主营介绍和产品信息失败: " + e.getMessage());
             e.printStackTrace();
             return null;
         }

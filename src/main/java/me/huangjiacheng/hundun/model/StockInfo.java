@@ -13,6 +13,8 @@ public class StockInfo {
     private String circulatingMarketValue; // 流通市值
     private String industry;       // 行业
     private String mainOperationBusiness; // 主营业务
+    private String productType;    // 产品类型
+    private String productName;    // 产品名称
     private String listingDate;    // 上市时间
     private String roe;            // ROE (净资产收益率)
     private String pe;             // 市盈率
@@ -94,6 +96,22 @@ public class StockInfo {
         this.mainOperationBusiness = mainOperationBusiness;
     }
     
+    public String getProductType() {
+        return productType;
+    }
+    
+    public void setProductType(String productType) {
+        this.productType = productType;
+    }
+    
+    public String getProductName() {
+        return productName;
+    }
+    
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
+    
     public String getListingDate() {
         return listingDate;
     }
@@ -130,6 +148,8 @@ public class StockInfo {
                 ", circulatingMarketValue='" + circulatingMarketValue + '\'' +
                 ", industry='" + industry + '\'' +
                 ", mainOperationBusiness='" + mainOperationBusiness + '\'' +
+                ", productType='" + productType + '\'' +
+                ", productName='" + productName + '\'' +
                 ", listingDate='" + listingDate + '\'' +
                 ", roe='" + roe + '\'' +
                 ", pe='" + pe + '\'' +
