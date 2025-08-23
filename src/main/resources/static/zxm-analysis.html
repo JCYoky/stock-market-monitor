@@ -2191,22 +2191,23 @@
                         throw new Error('获取A股列表失败');
                     }
 
-                    // 获取黑名单股票代码列表
-                    const blacklistCodes = new Set();
+                    // 获取需要排除的股票代码列表（黑名单、观察股、持仓股）
+                    const excludedCodes = new Set();
                     if (watchlistData && watchlistData.success && watchlistData.data) {
                         watchlistData.data.forEach(stock => {
-                            if (stock.stockType === 3) { // 黑名单股票
-                                blacklistCodes.add(stock.stockCode);
+                            if (stock.stockType === 1 || stock.stockType === 2 || stock.stockType === 3) {
+                                // 观察股(stockType=1)、持仓股(stockType=2)、黑名单股票(stockType=3)
+                                excludedCodes.add(stock.stockCode);
                             }
                         });
                     }
 
-                    // 过滤出A股股票（6位数字代码），并排除黑名单股票
+                    // 过滤出A股股票（6位数字代码），并排除黑名单、观察股、持仓股
                     const aShareStocks = aShareData.filter(stock => 
                         stock.code && 
                         stock.code.length === 6 && 
                         /^\d{6}$/.test(stock.code) &&
-                        !blacklistCodes.has(stock.code)
+                        !excludedCodes.has(stock.code)
                     );
 
                     if (aShareStocks.length === 0) {
@@ -2220,9 +2221,10 @@
                     console.log('翻石头找到的宝藏股票:', selectedStock);
                     console.log('翻石头统计信息:', {
                         '总A股数量': aShareData.length,
-                        '黑名单股票数量': blacklistCodes.size,
+                        '排除股票数量': excludedCodes.size,
                         '可用A股数量': aShareStocks.length,
-                        '排除比例': `${((blacklistCodes.size / aShareData.length) * 100).toFixed(1)}%`
+                        '排除比例': `${((excludedCodes.size / aShareData.length) * 100).toFixed(1)}%`,
+                        '排除类型': '黑名单、观察股、持仓股'
                     });
 
                     // 更新输入框
