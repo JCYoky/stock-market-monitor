@@ -30,6 +30,104 @@ public class AKShareService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
+     * 判断A股股票代码属于沪市还是深市，并添加对应前缀
+     * @param stockCode 股票代码（6位数字）
+     * @return 带前缀的股票代码（SH或SZ开头）
+     */
+    public String getStockCodeWithPrefix(String stockCode) {
+        if (stockCode == null || stockCode.trim().isEmpty()) {
+            return stockCode;
+        }
+        
+        // 去除可能的空格和前缀
+        String cleanCode = stockCode.trim();
+        if (cleanCode.startsWith("SH") || cleanCode.startsWith("SZ")) {
+            return cleanCode; // 已经有前缀，直接返回
+        }
+        
+        // 提取6位数字代码
+        String numericCode = cleanCode.replaceAll("[^0-9]", "");
+        if (numericCode.length() != 6) {
+            return stockCode; // 不是6位数字，返回原值
+        }
+        
+        // 判断市场归属
+        // 沪市：600xxx, 601xxx, 603xxx, 605xxx, 688xxx, 900xxx
+        // 深市：000xxx, 001xxx, 002xxx, 003xxx, 300xxx, 301xxx
+        if (numericCode.startsWith("600") || numericCode.startsWith("601") || 
+            numericCode.startsWith("603") || numericCode.startsWith("605") || 
+            numericCode.startsWith("688") || numericCode.startsWith("900")) {
+            return "SH" + numericCode;
+        } else if (numericCode.startsWith("000") || numericCode.startsWith("001") || 
+                   numericCode.startsWith("002") || numericCode.startsWith("003") || 
+                   numericCode.startsWith("300") || numericCode.startsWith("301")) {
+            return "SZ" + numericCode;
+        } else {
+            // 无法识别的代码，返回原值
+            return stockCode;
+        }
+    }
+
+    /**
+     * 获取不带前缀的纯数字股票代码
+     * @param stockCode 带前缀的股票代码（SH或SZ开头）
+     * @return 纯数字股票代码（6位数字）
+     */
+    public String getStockCodeWithoutPrefix(String stockCode) {
+        if (stockCode == null || stockCode.trim().isEmpty()) {
+            return stockCode;
+        }
+        
+        String cleanCode = stockCode.trim();
+        if (cleanCode.startsWith("SH") || cleanCode.startsWith("SZ")) {
+            return cleanCode.substring(2); // 去掉SH或SZ前缀
+        }
+        
+        return cleanCode; // 没有前缀，直接返回
+    }
+
+    /**
+     * 获取股票实际控制人信息
+     * @param symbol 股票代码
+     * @return 实际控制人名称，如果获取失败返回null
+     */
+    public String getStockController(String symbol) {
+        System.out.println("开始获取股票实际控制人信息，股票代码: " + symbol);
+        
+        AKShareRequest request = new AKShareRequest();
+        request.setSymbol("实际控制人");
+        
+        String json = akShareClient.fetchData("stock_hold_control_cninfo", request);
+        if (json == null) {
+            System.err.println("获取股票实际控制人信息失败: 返回数据为空");
+            return null;
+        }
+        
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isArray()) {
+                // 在所有股票中查找目标股票
+                for (JsonNode node : root) {
+                    String stockCode = getJsonValue(node, "证券代码");
+                    if (stockCode != null && stockCode.equals(symbol)) {
+                        String controller = getJsonValue(node, "实际控制人名称");
+                        if (controller != null && !controller.trim().isEmpty()) {
+                            System.out.println("成功获取股票实际控制人: " + controller);
+                            return controller;
+                        }
+                    }
+                }
+                System.out.println("未找到股票 " + symbol + " 的实际控制人信息");
+            }
+        } catch (Exception e) {
+            System.err.println("解析股票实际控制人信息失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return null;
+    }
+
+    /**
      * 获取A股股票代码和名称列表
      * @return 股票信息列表
      */
@@ -447,6 +545,17 @@ public class AKShareService {
             }
         } catch (Exception e) {
             System.err.println("获取主营业务和产品信息失败: " + e.getMessage());
+        }
+        
+        // 获取实际控制人信息
+        try {
+            String controller = getStockController(symbol);
+            if (controller != null && !controller.trim().isEmpty()) {
+                stockInfo.setController(controller);
+                System.out.println("成功设置实际控制人信息");
+            }
+        } catch (Exception e) {
+            System.err.println("获取实际控制人信息失败: " + e.getMessage());
         }
         
         // 计算ROE和市盈率

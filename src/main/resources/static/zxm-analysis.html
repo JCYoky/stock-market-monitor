@@ -1583,27 +1583,58 @@
             background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
         }
 
+        /* 实际控制人信息项样式 */
+        .stock-info-item.controller-info {
+            border-left: 3px solid #8b5cf6;
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+        }
+
+        .stock-info-item.controller-info .info-label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #5b21b6;
+        }
+
+        .stock-info-item.controller-info .info-value {
+            line-height: 1.4;
+            color: #7c3aed;
+            font-size: 0.9rem;
+        }
+
         /* 主营业务信息项样式 */
         .stock-info-item.main-business-info {
-            grid-column: 1 / 5;
             border-left: 3px solid #10b981;
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            padding: 20px;
         }
 
-        .business-info-header {
-            display: flex;
-            gap: 24px;
-            align-items: flex-start;
+        .stock-info-item.main-business-info .info-label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #065f46;
         }
 
-        .business-section {
-            flex: 1;
+        .stock-info-item.main-business-info .info-value {
+            line-height: 1.4;
+            color: #047857;
+            font-size: 0.9rem;
         }
 
-        .business-section:first-child {
-            border-right: 1px solid #d1fae5;
-            padding-right: 24px;
+        /* 产品名称信息项样式 */
+        .stock-info-item.product-name-info {
+            border-left: 3px solid #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .stock-info-item.product-name-info .info-label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #92400e;
+        }
+
+        .stock-info-item.product-name-info .info-value {
+            line-height: 1.4;
+            color: #a16207;
+            font-size: 0.9rem;
         }
 
         .stock-info-item.main-business-info .info-label {
@@ -2025,18 +2056,18 @@
                     </div>
                 </div>
                 <div class="stock-info-grid">
-                    <!-- 第一行：主营业务和产品名称合并为一个方块，占满四列 -->
-                    <div class="stock-info-item main-business-info" style="grid-column: 1 / 5;">
-                        <div class="business-info-header">
-                            <div class="business-section">
-                                <div class="info-label">主营业务</div>
-                                <div class="info-value" id="stockMainOperationBusiness">-</div>
-                            </div>
-                            <div class="business-section">
-                                <div class="info-label">产品名称</div>
-                                <div class="info-value" id="stockProductName">-</div>
-                            </div>
-                        </div>
+                    <!-- 第一行：实际控制人(占1列) + 主营业务(占1列) + 产品名称(占2列) -->
+                    <div class="stock-info-item controller-info">
+                        <div class="info-label">实际控制人</div>
+                        <div class="info-value" id="stockController">-</div>
+                    </div>
+                    <div class="stock-info-item main-business-info">
+                        <div class="info-label">主营业务</div>
+                        <div class="info-value" id="stockMainOperationBusiness">-</div>
+                    </div>
+                    <div class="stock-info-item product-name-info" style="grid-column: 3 / 5;">
+                        <div class="info-label">产品名称</div>
+                        <div class="info-value" id="stockProductName">-</div>
                     </div>
                     
                     <!-- 基本信息组 -->
@@ -2561,6 +2592,7 @@
                     'stockName': stockInfo.name || '-',
                     'stockPrice': stockInfo.latestPrice ? `¥${stockInfo.latestPrice}` : '-',
                     'stockIndustry': stockInfo.industry || '-',
+                    'stockController': stockInfo.controller || '-',
                     'stockMainOperationBusiness': stockInfo.mainOperationBusiness || '-',
                     'stockProductName': stockInfo.productName || '-',
                     'stockTotalShares': formatShares(stockInfo.totalShares),
@@ -4065,7 +4097,7 @@
             const deleteBtn = document.createElement('button');
             deleteBtn.id = 'deleteWatchlistBtn';
             deleteBtn.className = 'action-btn delete-btn';
-            deleteBtn.textContent = '删除';
+            deleteBtn.textContent = '删除自选';
             deleteBtn.onclick = deleteFromWatchlist;
             
             const actionsDiv = document.querySelector('.stock-actions');

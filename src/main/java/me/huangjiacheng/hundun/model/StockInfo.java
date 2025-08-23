@@ -15,6 +15,7 @@ public class StockInfo {
     private String mainOperationBusiness; // 主营业务
     private String productType;    // 产品类型
     private String productName;    // 产品名称
+    private String controller;     // 实际控制人
     private String listingDate;    // 上市时间
     private String roe;            // ROE (净资产收益率)
     private String pe;             // 市盈率
@@ -112,6 +113,14 @@ public class StockInfo {
         this.productName = productName;
     }
     
+    public String getController() {
+        return controller;
+    }
+    
+    public void setController(String controller) {
+        this.controller = controller;
+    }
+    
     public String getListingDate() {
         return listingDate;
     }
@@ -150,6 +159,7 @@ public class StockInfo {
                 ", mainOperationBusiness='" + mainOperationBusiness + '\'' +
                 ", productType='" + productType + '\'' +
                 ", productName='" + productName + '\'' +
+                ", controller='" + controller + '\'' +
                 ", listingDate='" + listingDate + '\'' +
                 ", roe='" + roe + '\'' +
                 ", pe='" + pe + '\'' +
