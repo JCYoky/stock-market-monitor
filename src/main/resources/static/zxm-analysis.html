@@ -1910,6 +1910,10 @@
                                 ROE(%)
                                 <span class="sort-icon">↕</span>
                             </th>
+                            <th class="sortable" data-field="roePeRatio" onclick="sortTable('roePeRatio')">
+                                ROE/PE
+                                <span class="sort-icon">↕</span>
+                            </th>
                             <th class="sortable" data-field="profitQuality" onclick="sortTable('profitQuality')">
                                 利润质量
                                 <span class="sort-icon">↕</span>
@@ -1952,6 +1956,10 @@
                             </th>
                             <th class="sortable" data-field="roe" onclick="sortBlacklistTable('roe')">
                                 ROE(%)
+                                <span class="sort-icon">↕</span>
+                            </th>
+                            <th class="sortable" data-field="roePeRatio" onclick="sortBlacklistTable('roePeRatio')">
+                                ROE/PE
                                 <span class="sort-icon">↕</span>
                             </th>
                             <th class="sortable" data-field="profitQuality" onclick="sortBlacklistTable('profitQuality')">
@@ -2707,6 +2715,49 @@
             
             // 市盈率TTM始终保留两位小数
             return num.toFixed(2);
+        }
+
+        /**
+         * 计算ROE/PE比率，保留两位小数
+         * @param {number|string} roe ROE值（百分比）
+         * @param {number|string} peTtm 市盈率TTM值
+         * @returns {string} 格式化后的ROE/PE值
+         */
+        function calculateRoePeRatio(roe, peTtm) {
+            if (!roe || !peTtm) return '-';
+            
+            const roeNum = parseFloat(roe);
+            const peTtmNum = parseFloat(peTtm);
+            
+            if (isNaN(roeNum) || isNaN(peTtmNum)) return '-';
+            
+            // 如果市盈率为0或负数，返回'-'
+            if (peTtmNum <= 0) return '-';
+            
+            // 计算ROE/PE，保留两位小数
+            const ratio = roeNum / peTtmNum;
+            return ratio.toFixed(2);
+        }
+
+        /**
+         * 计算ROE/PE比率数值，用于排序
+         * @param {number|string} roe ROE值（百分比）
+         * @param {number|string} peTtm 市盈率TTM值
+         * @returns {number} ROE/PE数值，如果无效则返回0
+         */
+        function calculateRoePeRatioValue(roe, peTtm) {
+            if (!roe || !peTtm) return 0;
+            
+            const roeNum = parseFloat(roe);
+            const peTtmNum = parseFloat(peTtm);
+            
+            if (isNaN(roeNum) || isNaN(peTtmNum)) return 0;
+            
+            // 如果市盈率为0或负数，返回0
+            if (peTtmNum <= 0) return 0;
+            
+            // 计算ROE/PE
+            return roeNum / peTtmNum;
         }
 
         /**
@@ -7147,7 +7198,7 @@
         function loadWatchlistData() {
             // 显示加载状态
             const tableBody = document.getElementById('watchlistTableBody');
-            tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">正在加载自选股数据...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #6b7280;">正在加载自选股数据...</td></tr>';
             
             // 调用后端API获取自选股数据
             fetch('/api/watchlist/all')
@@ -7162,7 +7213,7 @@
                         console.log('自选股数据:', data.data); // 调试信息
                         displayWatchlistData(data.data);
                     } else {
-                        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + (data.message || '未知错误') + '</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + (data.message || '未知错误') + '</td></tr>';
                     }
                 })
                 .catch(error => {
@@ -7239,7 +7290,7 @@
         function loadBlacklistData() {
             // 显示加载状态
             const tableBody = document.getElementById('blacklistTableBody');
-            tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">正在加载黑名单数据...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #6b7280;">正在加载黑名单数据...</td></tr>';
             
             // 调用后端API获取自选股数据，然后过滤出黑名单股票
             fetch('/api/watchlist/all')
@@ -7269,7 +7320,7 @@
             const tableBody = document.getElementById('blacklistTableBody');
             
             if (!blacklistData || blacklistData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">暂无黑名单股票</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #6b7280;">暂无黑名单股票</td></tr>';
                 return;
             }
             
@@ -7279,6 +7330,13 @@
             // 应用排序
             if (window.currentBlacklistSortField) {
                 sortBlacklistData(blacklistData, window.currentBlacklistSortField, window.currentBlacklistSortDirection);
+            } else {
+                // 默认排序：按ROE/PE从高到低排序
+                blacklistData.sort((a, b) => {
+                    const ratioA = calculateRoePeRatioValue(a.roe, a.peTtm);
+                    const ratioB = calculateRoePeRatioValue(b.roe, b.peTtm);
+                    return ratioB - ratioA;
+                });
             }
             
             let html = '';
@@ -7293,6 +7351,7 @@
                         <td><span class="stock-type-badge ${stockTypeClass}">${stockTypeText}</span></td>
                         <td>${formatPeTtm(stock.peTtm)}</td>
                         <td>${formatNumber(stock.roe)}%</td>
+                        <td>${calculateRoePeRatio(stock.roe, stock.peTtm)}</td>
                         <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.peScore)}</td>
@@ -7334,8 +7393,16 @@
 
         function sortBlacklistData(data, field, direction) {
             data.sort((a, b) => {
-                let valueA = a[field];
-                let valueB = b[field];
+                let valueA, valueB;
+                
+                // 特殊处理ROE/PE列
+                if (field === 'roePeRatio') {
+                    valueA = calculateRoePeRatioValue(a.roe, a.peTtm);
+                    valueB = calculateRoePeRatioValue(b.roe, b.peTtm);
+                } else {
+                    valueA = a[field];
+                    valueB = b[field];
+                }
                 
                 // 处理空值
                 if (valueA === null || valueA === undefined || valueA === '') valueA = 0;
@@ -7412,8 +7479,16 @@
          */
         function sortData(data, field, direction) {
             data.sort((a, b) => {
-                let valueA = a[field];
-                let valueB = b[field];
+                let valueA, valueB;
+                
+                // 特殊处理ROE/PE列
+                if (field === 'roePeRatio') {
+                    valueA = calculateRoePeRatioValue(a.roe, a.peTtm);
+                    valueB = calculateRoePeRatioValue(b.roe, b.peTtm);
+                } else {
+                    valueA = a[field];
+                    valueB = b[field];
+                }
                 
                 // 处理空值
                 if (valueA === null || valueA === undefined || valueA === '') valueA = 0;
@@ -7481,7 +7556,7 @@
             const tableBody = document.getElementById('watchlistTableBody');
             
             if (!watchlistData || watchlistData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">暂无自选股数据</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #6b7280;">暂无自选股数据</td></tr>';
                 return;
             }
             
@@ -7498,7 +7573,7 @@
             const filteredData = filterDataByType(watchlistData, currentTypeFilter);
             
             if (filteredData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">暂无符合条件的数据</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding:40px; color: #6b7280;">暂无符合条件的数据</td></tr>';
                 return;
             }
             
@@ -7506,11 +7581,11 @@
             if (currentSortField) {
                 sortData(filteredData, currentSortField, currentSortDirection);
             } else {
-                // 默认排序：按市盈率得分从大到小排序
+                // 默认排序：按ROE/PE从高到低排序
                 filteredData.sort((a, b) => {
-                    const scoreA = a.peScore || 0;
-                    const scoreB = b.peScore || 0;
-                    return scoreB - scoreA;
+                    const ratioA = calculateRoePeRatioValue(a.roe, a.peTtm);
+                    const ratioB = calculateRoePeRatioValue(b.roe, b.peTtm);
+                    return ratioB - ratioA;
                 });
             }
             
@@ -7526,6 +7601,7 @@
                         <td><span class="stock-type-badge ${stockTypeClass}">${stockTypeText}</span></td>
                         <td>${formatPeTtm(stock.peTtm)}</td>
                         <td>${formatNumber(stock.roe)}%</td>
+                        <td>${calculateRoePeRatio(stock.roe, stock.peTtm)}</td>
                         <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.peScore)}</td>

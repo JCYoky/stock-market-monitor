@@ -95,7 +95,7 @@ public class AKShareService {
         System.out.println("开始获取股票实际控制人信息，股票代码: " + symbol);
         
         AKShareRequest request = new AKShareRequest();
-        request.setSymbol("实际控制人");
+        request.setSymbol("全部");
         
         String json = akShareClient.fetchData("stock_hold_control_cninfo", request);
         if (json == null) {
