@@ -124,7 +124,7 @@ public class AKShareService {
             e.printStackTrace();
         }
         
-        return null;
+        return "无";
     }
 
     /**
@@ -550,12 +550,11 @@ public class AKShareService {
         // 获取实际控制人信息
         try {
             String controller = getStockController(symbol);
-            if (controller != null && !controller.trim().isEmpty()) {
-                stockInfo.setController(controller);
-                System.out.println("成功设置实际控制人信息");
-            }
+            stockInfo.setController(controller);
+            System.out.println("成功设置实际控制人信息: " + controller);
         } catch (Exception e) {
             System.err.println("获取实际控制人信息失败: " + e.getMessage());
+            stockInfo.setController("无");
         }
         
         // 计算ROE和市盈率
