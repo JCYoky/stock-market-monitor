@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>默认排序测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .test-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>默认排序测试</h1>
+    
+    <div class="test-container">
+        <h2>自选股默认排序测试</h2>
+        <div class="test-description">应该按预估收益率从高到低排序</div>
+        <table id="watchlistTable">
+            <thead>
+                <tr>
+                    <th>股票代码</th>
+                    <th>股票名称</th>
+                    <th>预估收益率</th>
+                    <th>排序说明</th>
+                </tr>
+            </thead>
+            <tbody id="watchlistTableBody">
+                <!-- 数据将通过JavaScript填充 -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="test-container">
+        <h2>黑名单默认排序测试</h2>
+        <div class="test-description">应该按预估收益率从高到低排序</div>
+        <table id="blacklistTable">
+            <thead>
+                <tr>
+                    <th>股票代码</th>
+                    <th>股票名称</th>
+                    <th>预估收益率</th>
+                    <th>排序说明</th>
+                </tr>
+            </thead>
+            <tbody id="blacklistTableBody">
+                <!-- 数据将通过JavaScript填充 -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function formatNumber(value) {
+            if (value === null || value === undefined || value === '') return '-';
+            
+            const num = typeof value === 'number' ? value : parseFloat(value);
+            if (isNaN(num)) return value;
+            
+            return num.toFixed(2);
+        }
+
+        function displayWatchlistTest() {
+            const testData = [
+                { code: '000001', name: '平安银行', expectedReturn: 15.5 },
+                { code: '000002', name: '万科A', expectedReturn: 25.2 },
+                { code: '000003', name: '国农科技', expectedReturn: 8.1 },
+                { code: '000004', name: '华联控股', expectedReturn: 35.8 },
+                { code: '000005', name: '世纪星源', expectedReturn: 12.3 },
+                { code: '000006', name: '深振业A', expectedReturn: 45.0 },
+                { code: '000007', name: '全新好', expectedReturn: 5.5 }
+            ];
+
+            // 模拟默认排序：按预估收益率从高到低排序
+            const sortedData = testData.sort((a, b) => {
+                const returnA = parseFloat(a.expectedReturn) || 0;
+                const returnB = parseFloat(b.expectedReturn) || 0;
+                return returnB - returnA;
+            });
+
+            const tableBody = document.getElementById('watchlistTableBody');
+            let html = '';
+            sortedData.forEach((stock, index) => {
+                const isCorrect = index === 0 || parseFloat(stock.expectedReturn) <= parseFloat(sortedData[index - 1].expectedReturn);
+                const rowClass = isCorrect ? '' : 'highlight';
+                html += `
+                    <tr class="${rowClass}">
+                        <td>${stock.code}</td>
+                        <td>${stock.name}</td>
+                        <td>${formatNumber(stock.expectedReturn)}%</td>
+                        <td>${isCorrect ? '✓ 排序正确' : '✗ 排序错误'}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        }
+
+        function displayBlacklistTest() {
+            const testData = [
+                { code: '000001', name: '平安银行', expectedReturn: 15.5 },
+                { code: '000002', name: '万科A', expectedReturn: 25.2 },
+                { code: '000003', name: '国农科技', expectedReturn: 8.1 },
+                { code: '000004', name: '华联控股', expectedReturn: 35.8 },
+                { code: '000005', name: '世纪星源', expectedReturn: 12.3 },
+                { code: '000006', name: '深振业A', expectedReturn: 45.0 },
+                { code: '000007', name: '全新好', expectedReturn: 5.5 }
+            ];
+
+            // 模拟默认排序：按预估收益率从高到低排序
+            const sortedData = testData.sort((a, b) => {
+                const returnA = parseFloat(a.expectedReturn) || 0;
+                const returnB = parseFloat(b.expectedReturn) || 0;
+                return returnB - returnA;
+            });
+
+            const tableBody = document.getElementById('blacklistTableBody');
+            let html = '';
+            sortedData.forEach((stock, index) => {
+                const isCorrect = index === 0 || parseFloat(stock.expectedReturn) <= parseFloat(sortedData[index - 1].expectedReturn);
+                const rowClass = isCorrect ? '' : 'highlight';
+                html += `
+                    <tr class="${rowClass}">
+                        <td>${stock.code}</td>
+                        <td>${stock.name}</td>
+                        <td>${formatNumber(stock.expectedReturn)}%</td>
+                        <td>${isCorrect ? '✓ 排序正确' : '✗ 排序错误'}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        }
+
+        // 页面加载时执行测试
+        window.onload = function() {
+            displayWatchlistTest();
+            displayBlacklistTest();
+        };
+    </script>
+</body>
+</html>

@@ -1,26 +1,14 @@
 package me.huangjiacheng.hundun.service;
 
+import me.huangjiacheng.hundun.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import me.huangjiacheng.hundun.model.StockFinancialDebtThs;
-import me.huangjiacheng.hundun.model.StockInfo;
-import me.huangjiacheng.hundun.model.StockFinancialBenefitThs;
-import me.huangjiacheng.hundun.model.StockFinancialCashThs;
-import me.huangjiacheng.hundun.model.StockValuationData;
-import me.huangjiacheng.hundun.model.StockTurnoverData;
-import me.huangjiacheng.hundun.model.StockFinancialAbstractThs;
-import me.huangjiacheng.hundun.model.StockFinancialHkBalanceSheet;
-import me.huangjiacheng.hundun.model.StockFinancialHkIncomeStatement;
-import me.huangjiacheng.hundun.model.StockFinancialHkCashFlow;
-import me.huangjiacheng.hundun.model.StockHkBasicInfo;
-import me.huangjiacheng.hundun.model.StockShareholderData;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import me.huangjiacheng.hundun.util.CalendarUtil;
+
+import java.util.*;
 
 @Service
 public class AKShareService {
@@ -175,6 +163,127 @@ public class AKShareService {
             }
         } catch (Exception e) {
             System.err.println("解析港股列表失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    //获取全市场中位数市盈率
+    public List<MarketRiskRatio> getMarketMiddlePETTM() {
+        List<MarketRiskRatio> result = new ArrayList<>();
+        AKShareRequest request = new AKShareRequest();
+        String json = akShareClient.fetchData("stock_a_ttm_lyr", request);
+
+        if (json == null) {
+            return result;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isArray()) {
+                for (JsonNode node : root) {
+                    MarketRiskRatio item = new MarketRiskRatio();
+                    item.setDate(CalendarUtil.normalizeDate(parseFieldValue(node, "date")));
+                    item.setMarketRiskRatio(Double.valueOf(parseFieldValue(node, "middlePETTM")));
+                    result.add(item);
+                }
+            }
+        }catch (Exception e) {
+            System.err.println("解析stock_financial_debt_ths数据失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    /**
+     * 获取经济通港股年度净利润预测数据
+     * @param symbol 股票代码
+     * @return 预测年报净利润列表
+     */
+    public List<StockProfitForecast> getHKStockProfitForecast(String symbol) {
+        List<StockProfitForecast> result = new ArrayList<>();
+        AKShareRequest request = new AKShareRequest();
+        request.setSymbol(symbol);
+        request.setIndicator("综合盈利预测");
+        String json = akShareClient.fetchData("stock_hk_profit_forecast_et", request);
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isEmpty()) {
+                return result;
+            }
+            if (root.isArray()) {
+                for (JsonNode node : root) {
+                    StockProfitForecast item = new StockProfitForecast();
+                    item.setSymbol(symbol);
+                    item.setYear(Integer.valueOf(Objects.requireNonNull(parseFieldValue(node, "财政年度"))));
+                    //单位：亿元
+                    item.setForecastAverage(Double.parseDouble(Objects.requireNonNull(parseFieldValue(node, "纯利/亏损"))) / 100);
+                    result.add(item);
+                }
+            }
+        }catch (Exception e) {
+            System.err.println("解析stock_profit_forecast_ths数据失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+     /**
+     * 获取同花顺年度净利润预测数据
+     * @param symbol 股票代码
+     * @return 预测年报净利润列表
+     */
+    public List<StockProfitForecast> getStockProfitForecast(String symbol) {
+        List<StockProfitForecast> result = new ArrayList<>();
+        AKShareRequest request = new AKShareRequest();
+        request.setSymbol(symbol);
+        request.setIndicator("预测年报净利润");
+        String json = akShareClient.fetchData("stock_profit_forecast_ths", request);
+        if (json == null) {
+            return result;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isEmpty()) {
+                return result;
+            }
+            if (root.isArray()) {
+                for (JsonNode node : root) {
+                    StockProfitForecast item = new StockProfitForecast();
+                    item.setSymbol(symbol);
+                    item.setYear(Integer.valueOf(parseFieldValue(node, "年度")));//单位：亿元
+                    item.setForecastAverage(Double.valueOf(parseFieldValue(node, "均值")));
+                    result.add(item);
+                }
+            }
+        }catch (Exception e) {
+            System.err.println("解析stock_profit_forecast_ths数据失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    public StockInfo getHKStockInfo(String symbol) {
+        StockInfo result = new StockInfo();
+        result.setCode(symbol);
+        AKShareRequest request = new AKShareRequest();
+        request.setSymbol(symbol);
+        String json = akShareClient.fetchData("stock_hk_financial_indicator_em", request);
+        if (json == null) {
+            return result;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isEmpty()) {
+                return result;
+            }
+            root.get(0).properties().forEach(entry -> {
+                String key = entry.getKey();
+                String value = entry.getValue().asText();
+                if (key.equals("总市值(港元)")) {
+                    //转换为单位：人民币
+                    result.setTotalMarketValue(String.valueOf(Double.parseDouble(value) * 0.91));
+                }else if (key.equals("市盈率")) {
+                    result.setPe(value);
+                }
+            });
+        }catch (Exception e) {
+            System.err.println("stock_hk_financial_indicator_em数据失败: " + e.getMessage());
         }
         return result;
     }

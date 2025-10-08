@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圆点指示器测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        /* 单元格背景色指示器样式 */
+        .cell-indicator.green {
+            background-color: rgba(16, 185, 129, 0.2) !important;
+        }
+
+        .cell-indicator.red {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+        }
+
+        /* 确保指示器背景色在各种状态下都保持显示 */
+        tr:hover .cell-indicator.green {
+            background-color: rgba(16, 185, 129, 0.25) !important;
+        }
+
+        tr:hover .cell-indicator.red {
+            background-color: rgba(239, 68, 68, 0.25) !important;
+        }
+
+        tr:nth-child(even) .cell-indicator.green {
+            background-color: rgba(16, 185, 129, 0.2) !important;
+        }
+
+        tr:nth-child(even) .cell-indicator.red {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+        }
+
+        tr:nth-child(even):hover .cell-indicator.green {
+            background-color: rgba(16, 185, 129, 0.25) !important;
+        }
+
+        tr:nth-child(even):hover .cell-indicator.red {
+            background-color: rgba(239, 68, 68, 0.25) !important;
+        }
+        
+        .test-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>圆点指示器测试</h1>
+    
+    <div class="test-container">
+        <h2>预估增长率测试</h2>
+        <div class="test-description">预估增长率 > 10% 显示绿色圆点，否则显示红色圆点</div>
+        <table id="growthRateTable">
+            <thead>
+                <tr>
+                    <th>股票代码</th>
+                    <th>股票名称</th>
+                    <th>预估增长率</th>
+                    <th>说明</th>
+                </tr>
+            </thead>
+            <tbody id="growthRateTableBody">
+                <!-- 数据将通过JavaScript填充 -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="test-container">
+        <h2>预估收益率测试</h2>
+        <div class="test-description">预估收益率 > 30% 显示绿色圆点，否则显示红色圆点</div>
+        <table id="expectedReturnTable">
+            <thead>
+                <tr>
+                    <th>股票代码</th>
+                    <th>股票名称</th>
+                    <th>预估收益率</th>
+                    <th>说明</th>
+                </tr>
+            </thead>
+            <tbody id="expectedReturnTableBody">
+                <!-- 数据将通过JavaScript填充 -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function formatNumber(value) {
+            if (value === null || value === undefined || value === '') return '-';
+            
+            const num = typeof value === 'number' ? value : parseFloat(value);
+            if (isNaN(num)) return value;
+            
+            return num.toFixed(2);
+        }
+
+        /**
+         * 生成单元格指示器类名
+         * @param {number} value 数值
+         * @param {number} threshold 阈值
+         * @returns {string} CSS类名
+         */
+        function generateCellIndicatorClass(value, threshold) {
+            if (value === null || value === undefined || value === '') return '';
+            
+            const num = parseFloat(value);
+            if (isNaN(num)) return '';
+            
+            const isGood = num > threshold;
+            const colorClass = isGood ? 'green' : 'red';
+            
+            return `cell-indicator ${colorClass}`;
+        }
+
+        function displayGrowthRateTest() {
+            const testData = [
+                { code: '000001', name: '平安银行', rate: 15.5, description: '15.5% > 10% (绿色)' },
+                { code: '000002', name: '万科A', rate: 8.2, description: '8.2% < 10% (红色)' },
+                { code: '000003', name: '国农科技', rate: 10.0, description: '10.0% = 10% (红色)' },
+                { code: '000004', name: '华联控股', rate: 25.8, description: '25.8% > 10% (绿色)' },
+                { code: '000005', name: '世纪星源', rate: -5.2, description: '-5.2% < 10% (红色)' },
+                { code: '000006', name: '深振业A', rate: null, description: 'null值 (无圆点)' },
+                { code: '000007', name: '全新好', rate: '', description: '空值 (无圆点)' }
+            ];
+
+            const tableBody = document.getElementById('growthRateTableBody');
+            let html = '';
+            testData.forEach(stock => {
+                html += `
+                    <tr>
+                        <td>${stock.code}</td>
+                        <td>${stock.name}</td>
+                        <td class="${generateCellIndicatorClass(stock.rate, 10)}">${formatNumber(stock.rate)}%</td>
+                        <td>${stock.description}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        }
+
+        function displayExpectedReturnTest() {
+            const testData = [
+                { code: '000001', name: '平安银行', rate: 35.5, description: '35.5% > 30% (绿色)' },
+                { code: '000002', name: '万科A', rate: 25.2, description: '25.2% < 30% (红色)' },
+                { code: '000003', name: '国农科技', rate: 30.0, description: '30.0% = 30% (红色)' },
+                { code: '000004', name: '华联控股', rate: 45.8, description: '45.8% > 30% (绿色)' },
+                { code: '000005', name: '世纪星源', rate: -10.2, description: '-10.2% < 30% (红色)' },
+                { code: '000006', name: '深振业A', rate: null, description: 'null值 (无圆点)' },
+                { code: '000007', name: '全新好', rate: '', description: '空值 (无圆点)' }
+            ];
+
+            const tableBody = document.getElementById('expectedReturnTableBody');
+            let html = '';
+            testData.forEach(stock => {
+                html += `
+                    <tr>
+                        <td>${stock.code}</td>
+                        <td>${stock.name}</td>
+                        <td class="${generateCellIndicatorClass(stock.rate, 30)}">${formatNumber(stock.rate)}%</td>
+                        <td>${stock.description}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        }
+
+        // 页面加载时执行测试
+        window.onload = function() {
+            displayGrowthRateTest();
+            displayExpectedReturnTest();
+        };
+    </script>
+</body>
+</html>

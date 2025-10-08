@@ -44,6 +44,14 @@ public class StockWatchlist {
      */
     private Double peScore;
     /**
+     * 预期净利润增长率
+     */
+    private Double expectedGrowthRate;
+    /**
+     * 预估年化收益率
+     */
+    private Double expectedReturn;
+    /**
      * 创建时间
      */
     private String createdTime;

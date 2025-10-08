@@ -36,4 +36,9 @@ public interface MarketRiskRatioMapper {
      * 根据日期范围查询市危率数据
      */
     List<MarketRiskRatio> selectByDateRange(@Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    /**
+     * 根据日期删除市危率数据
+     */
+    void deleteByDate(@Param("date") String date);
 }

@@ -1,6 +1,11 @@
 package me.huangjiacheng.hundun;
 
+import me.huangjiacheng.hundun.mapper.MarketRiskRatioMapper;
+import me.huangjiacheng.hundun.model.MarketRiskRatio;
+import me.huangjiacheng.hundun.service.AKShareService;
 import me.huangjiacheng.hundun.service.FinancialAnalysisService;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +25,12 @@ public class FinancialAnalysisServiceTest {
 
     @Autowired
     private FinancialAnalysisService financialAnalysisService;
+
+    @Autowired
+    private MarketRiskRatioMapper marketRiskRatioMapper;
+
+    @Autowired
+    private AKShareService akShareService;
 
     /**
      * 手动触发更新市危率操作
@@ -62,5 +73,32 @@ public class FinancialAnalysisServiceTest {
         } catch (Exception e) {
             logger.error("❌ 为我的股票构建WatchList失败：{}", e.getMessage(), e);
         }
+    }
+
+    @Test
+    public void testDataClear() {
+        List<MarketRiskRatio> marketRiskRatios = marketRiskRatioMapper.selectAll();
+        System.out.println(marketRiskRatios.size());
+        marketRiskRatios.forEach(ratio -> {
+            if(ratio.getDate() != null) {
+                marketRiskRatioMapper.deleteByDate(ratio.getDate());
+                System.out.println("清理完成：" + ratio.getDate());
+            }
+        });
+    }
+
+    @Test
+    public void testMiddlePETTM() {
+        List<MarketRiskRatio> marketRiskRatios = akShareService.getMarketMiddlePETTM();
+        marketRiskRatios.forEach(m -> {
+            System.out.println(m.getMarketRiskRatio());
+        });
+    }
+
+    @Test
+    public void testStockProfitForecast() {
+//        akShareService.getStockProfitForecast("000651");
+//        akShareService.getHKStockProfitForecast("06862");
+        akShareService.getHKStockInfo("06862");
     }
 }

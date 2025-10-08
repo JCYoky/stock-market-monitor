@@ -48,5 +48,10 @@
         WHERE date BETWEEN #{startDate} AND #{endDate}
         ORDER BY date DESC
     </select>
+
+    <delete id="deleteByDate">
+        DELETE FROM market_risk_ratio
+        WHERE date = #{date}
+    </delete>
     
 </mapper>

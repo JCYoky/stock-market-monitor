@@ -366,11 +366,23 @@
             background: #f3f4f6;
         }
 
+        .watchlist-table tr:hover td:not(.cell-indicator) {
+            background: #f3f4f6;
+        }
+
         .watchlist-table tr:nth-child(even) {
             background: #fafafa;
         }
 
+        .watchlist-table tr:nth-child(even) td:not(.cell-indicator) {
+            background: #fafafa;
+        }
+
         .watchlist-table tr:nth-child(even):hover {
+            background: #f3f4f6;
+        }
+
+        .watchlist-table tr:nth-child(even):hover td:not(.cell-indicator) {
             background: #f3f4f6;
         }
 
@@ -405,6 +417,40 @@
             background: #6b7280;
             color: white;
             border-color: #4b5563;
+        }
+
+        /* 单元格背景色指示器样式 */
+        .cell-indicator.green {
+            background-color: rgba(16, 185, 129, 0.2) !important;
+        }
+
+        .cell-indicator.red {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+        }
+
+        /* 确保指示器背景色在各种状态下都保持显示 */
+        .watchlist-table tr:hover .cell-indicator.green {
+            background-color: rgba(16, 185, 129, 0.25) !important;
+        }
+
+        .watchlist-table tr:hover .cell-indicator.red {
+            background-color: rgba(239, 68, 68, 0.25) !important;
+        }
+
+        .watchlist-table tr:nth-child(even) .cell-indicator.green {
+            background-color: rgba(16, 185, 129, 0.2) !important;
+        }
+
+        .watchlist-table tr:nth-child(even) .cell-indicator.red {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+        }
+
+        .watchlist-table tr:nth-child(even):hover .cell-indicator.green {
+            background-color: rgba(16, 185, 129, 0.25) !important;
+        }
+
+        .watchlist-table tr:nth-child(even):hover .cell-indicator.red {
+            background-color: rgba(239, 68, 68, 0.25) !important;
         }
 
         /* 黑名单按钮样式 */
@@ -1926,6 +1972,14 @@
                                 市盈率得分
                                 <span class="sort-icon">↕</span>
                             </th>
+                            <th class="sortable" data-field="expectedGrowthRate" onclick="sortTable('expectedGrowthRate')">
+                                预估增长率
+                                <span class="sort-icon">↕</span>
+                            </th>
+                            <th class="sortable" data-field="expectedReturn" onclick="sortTable('expectedReturn')">
+                                预估收益率
+                                <span class="sort-icon">↕</span>
+                            </th>
                             <th>更新时间</th>
                             <th style="width: 140px;">操作</th>
                         </tr>
@@ -1972,6 +2026,14 @@
                             </th>
                             <th class="sortable" data-field="peScore" onclick="sortBlacklistTable('peScore')">
                                 市盈率得分
+                                <span class="sort-icon">↕</span>
+                            </th>
+                            <th class="sortable" data-field="expectedGrowthRate" onclick="sortBlacklistTable('expectedGrowthRate')">
+                                预估增长率
+                                <span class="sort-icon">↕</span>
+                            </th>
+                            <th class="sortable" data-field="expectedReturn" onclick="sortBlacklistTable('expectedReturn')">
+                                预估收益率
                                 <span class="sort-icon">↕</span>
                             </th>
                             <th>更新时间</th>
@@ -2682,28 +2744,7 @@
             }
         }
 
-        function formatNumber(value) {
-            if (!value) return '-';
-            const num = parseFloat(value);
-            if (isNaN(num)) return value;
 
-            // 过亿的数字显示为亿单位，保留两位小数
-            if (num >= 1e8) {
-                return (num / 1e8).toFixed(2) + '亿';
-            }
-            // 过万的数字显示为万单位，保留两位小数
-            else if (num >= 1e4) {
-                return (num / 1e4).toFixed(2) + '万';
-            }
-            // 小于1万的数字，如果是整数则显示整数，否则保留两位小数
-            else {
-                if (Number.isInteger(num)) {
-                    return num.toLocaleString();
-                } else {
-                    return num.toFixed(2);
-                }
-            }
-        }
 
         /**
          * 格式化市盈率TTM，保留两位小数
@@ -7331,11 +7372,11 @@
             if (window.currentBlacklistSortField) {
                 sortBlacklistData(blacklistData, window.currentBlacklistSortField, window.currentBlacklistSortDirection);
             } else {
-                // 默认排序：按ROE/PE从高到低排序
+                // 默认排序：按预估收益率从高到低排序
                 blacklistData.sort((a, b) => {
-                    const ratioA = calculateRoePeRatioValue(a.roe, a.peTtm);
-                    const ratioB = calculateRoePeRatioValue(b.roe, b.peTtm);
-                    return ratioB - ratioA;
+                    const returnA = parseFloat(a.expectedReturn) || 0;
+                    const returnB = parseFloat(b.expectedReturn) || 0;
+                    return returnB - returnA;
                 });
             }
             
@@ -7355,6 +7396,8 @@
                         <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.peScore)}</td>
+                        <td class="${generateCellIndicatorClass(stock.expectedGrowthRate, 10)}">${formatNumber(stock.expectedGrowthRate)}%</td>
+                        <td class="${generateCellIndicatorClass(stock.expectedReturn, 30)}">${formatNumber(stock.expectedReturn)}%</td>
                         <td>${stock.updatedTime ? stock.updatedTime.substring(0, 10) : '-'}</td>
                         <td>
                             <button class="detail-btn" onclick="analyzeStockFromBlacklist('${stock.stockCode}', '${stock.stockName}')">
@@ -7581,11 +7624,11 @@
             if (currentSortField) {
                 sortData(filteredData, currentSortField, currentSortDirection);
             } else {
-                // 默认排序：按ROE/PE从高到低排序
+                // 默认排序：按预估收益率从高到低排序
                 filteredData.sort((a, b) => {
-                    const ratioA = calculateRoePeRatioValue(a.roe, a.peTtm);
-                    const ratioB = calculateRoePeRatioValue(b.roe, b.peTtm);
-                    return ratioB - ratioA;
+                    const returnA = parseFloat(a.expectedReturn) || 0;
+                    const returnB = parseFloat(b.expectedReturn) || 0;
+                    return returnB - returnA;
                 });
             }
             
@@ -7605,6 +7648,8 @@
                         <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
                         <td>${formatNumber(stock.peScore)}</td>
+                        <td class="${generateCellIndicatorClass(stock.expectedGrowthRate, 10)}">${formatNumber(stock.expectedGrowthRate)}%</td>
+                        <td class="${generateCellIndicatorClass(stock.expectedReturn, 30)}">${formatNumber(stock.expectedReturn)}%</td>
                         <td>${stock.updatedTime ? stock.updatedTime.substring(0, 10) : '-'}</td>
                         <td>
                             <button class="detail-btn" onclick="analyzeStockFromWatchlist('${stock.stockCode}', '${stock.stockName}')">
@@ -7832,17 +7877,54 @@
         }
 
         function formatNumber(value) {
-            if (value === null || value === undefined) return '-';
-            if (typeof value === 'number') {
-                if (value === 0) return '0';
-                if (Math.abs(value) < 0.01) return value.toFixed(4);
-                if (Math.abs(value) < 0.1) return value.toFixed(3);
-                if (Math.abs(value) < 1) return value.toFixed(2);
-                if (Math.abs(value) < 10) return value.toFixed(2);
-                if (Math.abs(value) < 100) return value.toFixed(1);
-                return value.toFixed(0);
+            if (value === null || value === undefined || value === '') return '-';
+            
+            const num = typeof value === 'number' ? value : parseFloat(value);
+            if (isNaN(num)) return value;
+            const absNum = Math.abs(num);
+            
+            // 处理大数字（亿/万单位）
+            if (absNum >= 1e8) {
+                return (num / 1e8).toFixed(2) + '亿';
             }
-            return value;
+            else if (absNum >= 1e4) {
+                return (num / 1e4).toFixed(2) + '万';
+            }
+            
+            // 处理小数精度
+            if (num === 0) return '0';
+            
+            
+            if (absNum < 0.01) return num.toFixed(4);
+            if (absNum < 0.1) return num.toFixed(3);
+            if (absNum < 1) return num.toFixed(2);
+            if (absNum < 10) return num.toFixed(2);
+            if (absNum < 100) return num.toFixed(1);
+            
+            // 对于大于等于100的整数，使用千位分隔符
+            if (Number.isInteger(num)) {
+                return num.toLocaleString();
+            }
+            
+            return num.toFixed(0);
+        }
+
+        /**
+         * 生成单元格指示器类名
+         * @param {number} value 数值
+         * @param {number} threshold 阈值
+         * @returns {string} CSS类名
+         */
+        function generateCellIndicatorClass(value, threshold) {
+            if (value === null || value === undefined || value === '') return '';
+            
+            const num = parseFloat(value);
+            if (isNaN(num)) return '';
+            
+            const isGood = num > threshold;
+            const colorClass = isGood ? 'green' : 'red';
+            
+            return `cell-indicator ${colorClass}`;
         }
 
         function formatDateTime(dateTimeStr) {
