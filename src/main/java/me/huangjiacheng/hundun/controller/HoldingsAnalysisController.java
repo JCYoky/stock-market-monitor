@@ -34,21 +34,4 @@ public class HoldingsAnalysisController {
             return ResponseEntity.internalServerError().body(response);
         }
     }
-    
-    /**
-     * 获取持仓风险评估
-     */
-    @GetMapping("/risk")
-    public ResponseEntity<Map<String, Object>> getHoldingsRiskAssessment() {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            Map<String, Object> riskResult = holdingsAnalysisService.getHoldingsRiskAssessment();
-            return ResponseEntity.ok(riskResult);
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "获取持仓风险评估失败：" + e.getMessage());
-            return ResponseEntity.internalServerError().body(response);
-        }
-    }
 }

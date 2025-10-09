@@ -86,10 +86,8 @@ public class AKShareService {
         if (symbol == null || symbol.trim().isEmpty()) {
             return 0.0;
         }
-        
-        // 优化：减少日期计算，只获取最近7天的数据
         String endDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String startDate = LocalDateTime.now().minusDays(7).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String startDate = LocalDateTime.now().minusDays(30).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         
         AKShareRequest request = new AKShareRequest();
         request.setSymbol(symbol);

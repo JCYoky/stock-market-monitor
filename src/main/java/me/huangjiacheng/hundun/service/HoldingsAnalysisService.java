@@ -5,6 +5,8 @@ import me.huangjiacheng.hundun.model.StockWatchlist;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -15,6 +17,9 @@ public class HoldingsAnalysisService {
 
     @Autowired
     private StockWatchlistMapper stockWatchlistMapper;
+    
+    @Autowired
+    private AKShareService akShareService;
 
     /**
      * 获取持仓分析数据
@@ -26,33 +31,65 @@ public class HoldingsAnalysisService {
             // 获取所有持仓股（type=2）
             List<StockWatchlist> holdings = stockWatchlistMapper.selectByStockType(2);
             
+            if (holdings == null || holdings.isEmpty()) {
+                result.put("success", true);
+                result.put("totalHoldings", 0);
+                result.put("totalMarketValue", BigDecimal.ZERO);
+                result.put("holdings", new ArrayList<>());
+                return result;
+            }
+            
+            // 计算总市值
+            BigDecimal totalMarketValue = BigDecimal.ZERO;
+            List<Map<String, Object>> holdingsList = new ArrayList<>();
+            
+            for (StockWatchlist holding : holdings) {
+                // 获取股票最新价格
+                Double currentPrice = akShareService.getStockLatestPrice(holding.getStockCode());
+                if (currentPrice == null || currentPrice <= 0) {
+                    currentPrice = 0.0;
+                }
+                
+                // 计算持仓市值
+                BigDecimal marketValue = BigDecimal.ZERO;
+                if (holding.getHoldingShares() != null && holding.getHoldingShares() > 0) {
+                    BigDecimal shares = new BigDecimal(holding.getHoldingShares());
+                    BigDecimal price = new BigDecimal(currentPrice.toString());
+                    marketValue = shares.multiply(price);
+                }
+                
+                totalMarketValue = totalMarketValue.add(marketValue);
+                
+                // 构建持仓数据（只保留四个字段）
+                Map<String, Object> holdingData = new HashMap<>();
+                holdingData.put("stockCode", holding.getStockCode());
+                holdingData.put("stockName", holding.getStockName());
+                holdingData.put("quantity", holding.getHoldingShares() != null ? holding.getHoldingShares() : 0);
+                holdingData.put("currentPrice", currentPrice);
+                holdingData.put("marketValue", marketValue);
+                
+                holdingsList.add(holdingData);
+            }
+            
+            // 计算持仓比例
+            for (Map<String, Object> holdingData : holdingsList) {
+                BigDecimal marketValue = (BigDecimal) holdingData.get("marketValue");
+                BigDecimal weight = BigDecimal.ZERO;
+                if (totalMarketValue.compareTo(BigDecimal.ZERO) > 0) {
+                    weight = marketValue.divide(totalMarketValue, 4, RoundingMode.HALF_UP)
+                            .multiply(new BigDecimal("100"));
+                }
+                holdingData.put("weight", weight);
+            }
+            
             result.put("success", true);
-            result.put("totalHoldings", holdings != null ? holdings.size() : 0);
-            result.put("holdings", holdings != null ? holdings : new ArrayList<>());
+            result.put("totalHoldings", holdings.size());
+            result.put("totalMarketValue", totalMarketValue);
+            result.put("holdings", holdingsList);
             
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", "获取持仓分析数据失败: " + e.getMessage());
-        }
-        
-        return result;
-    }
-
-    /**
-     * 获取持仓风险评估
-     */
-    public Map<String, Object> getHoldingsRiskAssessment() {
-        Map<String, Object> result = new HashMap<>();
-        
-        try {
-            result.put("success", true);
-            result.put("riskLevel", "待评估");
-            result.put("riskScore", 0);
-            result.put("recommendations", new ArrayList<>());
-            
-        } catch (Exception e) {
-            result.put("success", false);
-            result.put("message", "获取持仓风险评估失败: " + e.getMessage());
         }
         
         return result;

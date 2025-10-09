@@ -3,9 +3,12 @@ package me.huangjiacheng.hundun.service;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.Data;
+
 /**
  * 用于构建AKShare HTTP API的请求参数，所有key均为英文。
  */
+@Data
 public class AKShareRequest {
     private String symbol;
     private String indicator;
@@ -13,23 +16,6 @@ public class AKShareRequest {
     private String date;
     private String stock;//港股股票代码
     private Map<String, String> extraParams = new HashMap<>();
-
-    public String getSymbol() { return symbol; }
-    public void setSymbol(String symbol) { this.symbol = symbol; }
-
-    public String getIndicator() { return indicator; }
-    public void setIndicator(String indicator) { this.indicator = indicator; }
-
-    public String getPeriod() { return period; }
-    public void setPeriod(String period) { this.period = period; }
-
-    public String getDate() { return date; }
-    public void setDate(String date) { this.date = date; }
-
-    public String getStock() { return stock; }
-    public void setStock(String stock) { this.stock = stock; }
-
-    public Map<String, String> getExtraParams() { return extraParams; }
     public void setExtraParam(String key, String value) { this.extraParams.put(key, value); }
 
     /**

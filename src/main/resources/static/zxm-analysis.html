@@ -7918,7 +7918,7 @@
         function renderHoldingsAnalysis(data) {
             // 更新概览统计
             document.getElementById('totalHoldings').textContent = data.totalHoldings || 0;
-            document.getElementById('totalMarketValue').textContent = '-';
+            document.getElementById('totalMarketValue').textContent = formatMarketValue(data.totalMarketValue || 0);
             document.getElementById('avgRoe').textContent = '-';
             document.getElementById('avgExpectedReturn').textContent = '-';
             
@@ -7936,13 +7936,13 @@
                 row.innerHTML = `
                     <td>${holding.stockCode}</td>
                     <td>${holding.stockName}</td>
-                    <td>${holding.holdingShares || 0}</td>
+                    <td>${formatNumber(holding.quantity)}</td>
+                    <td>¥${formatNumber(holding.currentPrice)}</td>
+                    <td>${formatMarketValue(holding.marketValue)}</td>
+                    <td>${formatNumber(holding.weight)}%</td>
                     <td>-</td>
                     <td>-</td>
                     <td>-</td>
-                    <td>${formatNumber(holding.peTtm)}</td>
-                    <td>${formatNumber(holding.roe)}%</td>
-                    <td>${formatNumber(holding.expectedReturn)}%</td>
                     <td>
                         <button class="detail-btn" onclick="analyzeStockFromHoldings('${holding.stockCode}', '${holding.stockName}')">
                             查看详情
