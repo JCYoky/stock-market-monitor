@@ -7752,6 +7752,75 @@
                 .then(data => {
                     if (data.success && data.data) {
                         // 过滤出黑名单股票（type=3）
+                        const blacklistData = data.data.filter(stock => stock.stockType === 3);
+                        console.log('黑名单数据:', blacklistData);
+                        displayBlacklistData(blacklistData);
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + (data.message || '未知错误') + '</tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('加载黑名单数据失败:', error);
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + error.message + '</tr>';
+                });
+        }
+
+        function displayBlacklistData(blacklistData) {
+            const tableBody = document.getElementById('blacklistTableBody');
+            
+            if (!blacklistData || blacklistData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #6b7280;">暂无黑名单股票</td></tr>';
+                return;
+            }
+            
+            // 保存原始数据
+            window.originalBlacklistData = blacklistData;
+            
+            // 应用排序
+            if (window.currentBlacklistSortField) {
+                sortBlacklistData(blacklistData, window.currentBlacklistSortField, window.currentBlacklistSortDirection);
+            } else {
+                // 默认排序：按预估收益率从高到低排序
+                blacklistData.sort((a, b) => {
+                    const returnA = parseFloat(a.expectedReturn) || 0;
+                    const returnB = parseFloat(b.expectedReturn) || 0;
+                    return returnB - returnA;
+                });
+            }
+            
+            let html = '';
+            blacklistData.forEach(stock => {
+                const stockTypeText = '黑名单';
+                const stockTypeClass = 'stock-type-3';
+                
+                html += `
+                    <tr>
+                        <td>${stock.stockCode}</td>
+                        <td>${truncateStockName(stock.stockName)}</td>
+                        <td><span class="stock-type-badge ${stockTypeClass}">${stockTypeText}</span></td>
+                        <td>${formatPeTtm(stock.peTtm)}</td>
+                        <td>${formatNumber(stock.roe)}%</td>
+                        <td>${calculateRoePeRatio(stock.roe, stock.peTtm)}</td>
+                        <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
+                        <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
+                        <td>${formatNumber(stock.peScore)}</td>
+                        <td class="${generateCellIndicatorClass(stock.expectedGrowthRate, 10)}">${formatNumber(stock.expectedGrowthRate)}%</td>
+                        <td class="${generateCellIndicatorClass(stock.expectedReturn, 30)}">${formatNumber(stock.expectedReturn)}%</td>
+                        <td>${stock.updatedTime ? stock.updatedTime.substring(0, 10) : '-'}</td>
+                        <td>
+                            <button class="detail-btn" onclick="analyzeStockFromBlacklist('${stock.stockCode}', '${stock.stockName}')">
+                                查看详情
+                            </button>
+                            <button class="remove-blacklist-btn" onclick="removeFromBlacklist('${stock.stockCode}', '${stock.stockName}')">
+                                移除
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = html;
+        }
 
         /**
          * 显示持仓分析页面
@@ -7893,75 +7962,6 @@
             
             // 分析股票
             analyzeStock(stockCode);
-        }
-                        const blacklistData = data.data.filter(stock => stock.stockType === 3);
-                        console.log('黑名单数据:', blacklistData);
-                        displayBlacklistData(blacklistData);
-                    } else {
-                        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + (data.message || '未知错误') + '</tr>';
-                    }
-                })
-                .catch(error => {
-                    console.error('加载黑名单数据失败:', error);
-                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">加载失败: ' + error.message + '</tr>';
-                });
-        }
-
-        function displayBlacklistData(blacklistData) {
-            const tableBody = document.getElementById('blacklistTableBody');
-            
-            if (!blacklistData || blacklistData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #6b7280;">暂无黑名单股票</td></tr>';
-                return;
-            }
-            
-            // 保存原始数据
-            window.originalBlacklistData = blacklistData;
-            
-            // 应用排序
-            if (window.currentBlacklistSortField) {
-                sortBlacklistData(blacklistData, window.currentBlacklistSortField, window.currentBlacklistSortDirection);
-            } else {
-                // 默认排序：按预估收益率从高到低排序
-                blacklistData.sort((a, b) => {
-                    const returnA = parseFloat(a.expectedReturn) || 0;
-                    const returnB = parseFloat(b.expectedReturn) || 0;
-                    return returnB - returnA;
-                });
-            }
-            
-            let html = '';
-            blacklistData.forEach(stock => {
-                const stockTypeText = '黑名单';
-                const stockTypeClass = 'stock-type-3';
-                
-                html += `
-                    <tr>
-                        <td>${stock.stockCode}</td>
-                        <td>${truncateStockName(stock.stockName)}</td>
-                        <td><span class="stock-type-badge ${stockTypeClass}">${stockTypeText}</span></td>
-                        <td>${formatPeTtm(stock.peTtm)}</td>
-                        <td>${formatNumber(stock.roe)}%</td>
-                        <td>${calculateRoePeRatio(stock.roe, stock.peTtm)}</td>
-                        <td>${formatNumber(stock.profitQuality)}${(stock.profitQuality && stock.profitQuality < 1) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
-                        <td>${formatNumber(stock.assetsQuality)}${(stock.assetsQuality && stock.assetsQuality < 60) ? '<span style="color: #ef4444; margin-left: 4px;">↓</span>' : ''}</td>
-                        <td>${formatNumber(stock.peScore)}</td>
-                        <td class="${generateCellIndicatorClass(stock.expectedGrowthRate, 10)}">${formatNumber(stock.expectedGrowthRate)}%</td>
-                        <td class="${generateCellIndicatorClass(stock.expectedReturn, 30)}">${formatNumber(stock.expectedReturn)}%</td>
-                        <td>${stock.updatedTime ? stock.updatedTime.substring(0, 10) : '-'}</td>
-                        <td>
-                            <button class="detail-btn" onclick="analyzeStockFromBlacklist('${stock.stockCode}', '${stock.stockName}')">
-                                查看详情
-                            </button>
-                            <button class="remove-blacklist-btn" onclick="removeFromBlacklist('${stock.stockCode}', '${stock.stockName}')">
-                                移除
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            tableBody.innerHTML = html;
         }
 
         // 黑名单排序相关函数
