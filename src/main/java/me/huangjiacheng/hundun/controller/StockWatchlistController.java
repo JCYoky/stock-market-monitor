@@ -35,7 +35,8 @@ public class StockWatchlistController {
                 return ResponseEntity.badRequest().body(response);
             }
             
-            if (stockWatchlist.getStockName() == null || stockWatchlist.getStockName().trim().isEmpty()) {
+            // 股票名称验证：如果提供了股票名称，则不能为空；如果未提供，后端会自动获取
+            if (stockWatchlist.getStockName() != null && stockWatchlist.getStockName().trim().isEmpty()) {
                 response.put("success", false);
                 response.put("message", "股票名称不能为空");
                 return ResponseEntity.badRequest().body(response);
@@ -50,15 +51,26 @@ public class StockWatchlistController {
             // 检查是否已存在
             StockWatchlist existingStock = stockWatchlistService.getStockByCode(stockWatchlist.getStockCode());
             if (existingStock != null) {
-                // 更新现有记录：保留原有财务数据，只更新类型
+                // 更新现有记录：保留原有财务数据和股票名称，只更新类型和持仓股数
                 stockWatchlist.setId(existingStock.getId());
+                // 如果前端没有提供股票名称，使用数据库中的原有名称
+                if (stockWatchlist.getStockName() == null || stockWatchlist.getStockName().trim().isEmpty()) {
+                    stockWatchlist.setStockName(existingStock.getStockName());
+                }
                 stockWatchlist.setPeTtm(existingStock.getPeTtm());
                 stockWatchlist.setRoe(existingStock.getRoe());
                 stockWatchlist.setProfitQuality(existingStock.getProfitQuality());
                 stockWatchlist.setAssetsQuality(existingStock.getAssetsQuality());
                 stockWatchlist.setPeScore(existingStock.getPeScore());
+                stockWatchlist.setExpectedReturn(existingStock.getExpectedReturn());
+                stockWatchlist.setExpectedGrowthRate(existingStock.getExpectedGrowthRate());
                 stockWatchlist.setCreatedTime(existingStock.getCreatedTime());
                 stockWatchlist.setUpdatedTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                
+                // 如果新数据中没有持仓股数，保留原有值
+                if (stockWatchlist.getHoldingShares() == null) {
+                    stockWatchlist.setHoldingShares(existingStock.getHoldingShares());
+                }
                 
                 boolean updated = stockWatchlistService.updateStock(stockWatchlist);
                 if (updated) {
@@ -71,6 +83,11 @@ public class StockWatchlistController {
                 }
             } else {
                 // 添加新记录
+                // 设置默认持仓股数为0（如果未指定）
+                if (stockWatchlist.getHoldingShares() == null) {
+                    stockWatchlist.setHoldingShares(0);
+                }
+                
                 boolean added = stockWatchlistService.addStock(stockWatchlist);
                 if (added) {
                     response.put("success", true);

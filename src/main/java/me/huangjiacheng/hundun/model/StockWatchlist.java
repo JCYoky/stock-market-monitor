@@ -52,6 +52,10 @@ public class StockWatchlist {
      */
     private Double expectedReturn;
     /**
+     * 持仓股数
+     */
+    private Integer holdingShares;
+    /**
      * 创建时间
      */
     private String createdTime;

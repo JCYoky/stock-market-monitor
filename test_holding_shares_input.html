@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>持仓股数输入功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .test-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background: #2563eb;
+        }
+        
+        .test-button.secondary {
+            background: #6b7280;
+        }
+        
+        .test-button.secondary:hover {
+            background: #4b5563;
+        }
+        
+        /* 持仓股数输入对话框样式 */
+        .holding-shares-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .holding-shares-dialog-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .holding-shares-dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .holding-shares-dialog-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .holding-shares-dialog-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .holding-shares-dialog-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .holding-shares-dialog-body {
+            padding: 20px 24px;
+        }
+
+        .holding-shares-dialog-body p {
+            margin: 0 0 16px 0;
+            color: #374151;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .holding-shares-input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .holding-shares-input-group input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            margin-right: 8px;
+        }
+
+        .holding-shares-input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .holding-shares-unit {
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .holding-shares-dialog-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .holding-shares-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .holding-shares-btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .holding-shares-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+
+        .holding-shares-btn-confirm {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .holding-shares-btn-confirm:hover {
+            background: #2563eb;
+        }
+        
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>持仓股数输入功能测试</h1>
+    
+    <div class="test-container">
+        <h2>功能测试</h2>
+        <div class="test-description">测试持仓股数输入对话框的各种功能</div>
+        
+        <button class="test-button" onclick="testShowDialog()">显示输入对话框</button>
+        <button class="test-button secondary" onclick="testValidInput()">测试有效输入</button>
+        <button class="test-button secondary" onclick="testInvalidInput()">测试无效输入</button>
+        <button class="test-button secondary" onclick="testEmptyInput()">测试空输入</button>
+        <button class="test-button secondary" onclick="clearLog()">清空日志</button>
+        
+        <div class="log-area" id="logArea">
+            <div>测试日志：</div>
+        </div>
+    </div>
+
+    <!-- 持仓股数输入对话框 -->
+    <div id="holdingSharesDialog" class="holding-shares-dialog" style="display: none;">
+        <div class="holding-shares-dialog-content">
+            <div class="holding-shares-dialog-header">
+                <h3>设置持仓股数</h3>
+                <button class="holding-shares-dialog-close" onclick="closeHoldingSharesDialog()">&times;</button>
+            </div>
+            <div class="holding-shares-dialog-body">
+                <p>请输入 <span id="holdingSharesStockName"></span> (<span id="holdingSharesStockCode"></span>) 的持仓股数：</p>
+                <div class="holding-shares-input-group">
+                    <input type="number" id="holdingSharesInput" placeholder="请输入持仓股数" min="0" step="1">
+                    <span class="holding-shares-unit">股</span>
+                </div>
+                <div class="holding-shares-dialog-actions">
+                    <button class="holding-shares-btn holding-shares-btn-cancel" onclick="closeHoldingSharesDialog()">取消</button>
+                    <button class="holding-shares-btn holding-shares-btn-confirm" onclick="confirmHoldingShares()">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('logArea').innerHTML = '<div>测试日志：</div>';
+        }
+
+        function testShowDialog() {
+            log('测试：显示持仓股数输入对话框');
+            showHoldingSharesInputDialog('000001', '平安银行');
+        }
+
+        function testValidInput() {
+            log('测试：有效输入 - 1000股');
+            showHoldingSharesInputDialog('000002', '万科A');
+            setTimeout(() => {
+                document.getElementById('holdingSharesInput').value = '1000';
+                log('已设置输入值为：1000');
+            }, 100);
+        }
+
+        function testInvalidInput() {
+            log('测试：无效输入 - -100股');
+            showHoldingSharesInputDialog('000003', '国农科技');
+            setTimeout(() => {
+                document.getElementById('holdingSharesInput').value = '-100';
+                log('已设置输入值为：-100（负数）');
+            }, 100);
+        }
+
+        function testEmptyInput() {
+            log('测试：空输入');
+            showHoldingSharesInputDialog('000004', '华联控股');
+            setTimeout(() => {
+                document.getElementById('holdingSharesInput').value = '';
+                log('已设置输入值为空');
+            }, 100);
+        }
+
+        // 显示持仓股数输入对话框
+        function showHoldingSharesInputDialog(stockCode, stockName) {
+            document.getElementById('holdingSharesStockCode').textContent = stockCode;
+            document.getElementById('holdingSharesStockName').textContent = stockName;
+            document.getElementById('holdingSharesInput').value = '';
+            document.getElementById('holdingSharesDialog').style.display = 'flex';
+            
+            log(`显示对话框 - 股票：${stockName} (${stockCode})`);
+            
+            // 聚焦到输入框
+            setTimeout(() => {
+                document.getElementById('holdingSharesInput').focus();
+            }, 100);
+        }
+
+        // 关闭持仓股数输入对话框
+        function closeHoldingSharesDialog() {
+            document.getElementById('holdingSharesDialog').style.display = 'none';
+            log('对话框已关闭');
+        }
+
+        // 确认持仓股数
+        function confirmHoldingShares() {
+            const stockCode = document.getElementById('holdingSharesStockCode').textContent;
+            const stockName = document.getElementById('holdingSharesStockName').textContent;
+            const holdingShares = document.getElementById('holdingSharesInput').value;
+
+            log(`确认操作 - 股票：${stockName} (${stockCode})，输入值：${holdingShares}`);
+
+            // 验证输入
+            if (!holdingShares || holdingShares === '') {
+                log('❌ 验证失败：请输入持仓股数');
+                alert('请输入持仓股数');
+                return;
+            }
+
+            const shares = parseInt(holdingShares);
+            if (isNaN(shares) || shares < 0) {
+                log('❌ 验证失败：请输入有效的持仓股数（大于等于0的整数）');
+                alert('请输入有效的持仓股数（大于等于0的整数）');
+                return;
+            }
+
+            log(`✅ 验证通过：持仓股数 ${shares.toLocaleString()} 股`);
+
+            // 关闭对话框
+            closeHoldingSharesDialog();
+
+            // 模拟API调用
+            log('📡 模拟API调用...');
+            setTimeout(() => {
+                log(`✅ 成功添加为持仓股，持仓股数：${shares.toLocaleString()}股`);
+            }, 500);
+        }
+
+        // 监听回车键确认
+        document.addEventListener('DOMContentLoaded', function() {
+            const holdingSharesInput = document.getElementById('holdingSharesInput');
+            if (holdingSharesInput) {
+                holdingSharesInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        log('检测到回车键，执行确认操作');
+                        confirmHoldingShares();
+                    }
+                });
+            }
+            
+            log('页面加载完成，测试环境已准备就绪');
+        });
+    </script>
+</body>
+</html>
+

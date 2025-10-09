@@ -227,6 +227,139 @@
             transform: translateY(0);
         }
 
+        /* 持仓股数输入对话框样式 */
+        .holding-shares-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .holding-shares-dialog-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .holding-shares-dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .holding-shares-dialog-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .holding-shares-dialog-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .holding-shares-dialog-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .holding-shares-dialog-body {
+            padding: 20px 24px;
+        }
+
+        .holding-shares-dialog-body p {
+            margin: 0 0 16px 0;
+            color: #374151;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .holding-shares-input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .holding-shares-input-group input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            margin-right: 8px;
+        }
+
+        .holding-shares-input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .holding-shares-unit {
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .holding-shares-dialog-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .holding-shares-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .holding-shares-btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .holding-shares-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+
+        .holding-shares-btn-confirm {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .holding-shares-btn-confirm:hover {
+            background: #2563eb;
+        }
+
         .watchlist-header {
             display: flex;
             justify-content: space-between;
@@ -4063,10 +4196,10 @@
             let originalStockName = '';
             if (stockNameElement) {
                 // A股页面有stockName元素
-                originalStockName = stockNameElement.textContent.replace(/[观持]/g, '').trim();
+                originalStockName = stockNameElement.textContent.replace(/[观持黑]/g, '').trim();
             } else if (stockInfoTitle) {
                 // 港股页面没有stockName元素，从标题中提取
-                originalStockName = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+                originalStockName = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
             }
             
             if (watchlistData && (watchlistData.stockType === 1 || watchlistData.stockType === 2 || watchlistData.stockType === 3)) {
@@ -4077,13 +4210,14 @@
                     // 观察股 - 在标题左侧显示标记
                     if (stockInfoTitle && stockInfoTitle.textContent) {
                         // 先清理标题中的原有标记，然后添加新标记
-                        const cleanTitle = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+                        const cleanTitle = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
                         stockInfoTitle.innerHTML = `<span class="watch-badge">观</span> ${cleanTitle}`;
                     }
                     // 为港股页面添加标记到公司名称标题
                     const companyTitle = document.querySelector('.stock-info-header h2');
-                    if (companyTitle && !companyTitle.innerHTML.includes('观')) {
-                        const cleanCompanyTitle = companyTitle.textContent.replace(/[观持]/g, '').trim();
+                    if (companyTitle) {
+                        // 总是清理并添加正确的标记，确保标记正确
+                        const cleanCompanyTitle = companyTitle.textContent.replace(/[观持黑]/g, '').trim();
                         companyTitle.innerHTML = `<span class="watch-badge">观</span> ${cleanCompanyTitle}`;
                     }
                     watchBtn.style.display = 'none';
@@ -4103,13 +4237,14 @@
                     // 持仓股 - 在标题左侧显示标记
                     if (stockInfoTitle && stockInfoTitle.textContent) {
                         // 先清理标题中的原有标记，然后添加新标记
-                        const cleanTitle = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+                        const cleanTitle = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
                         stockInfoTitle.innerHTML = `<span class="portfolio-badge">持</span> ${cleanTitle}`;
                     }
                     // 为港股页面添加标记到公司名称标题
                     const companyTitle = document.querySelector('.stock-info-header h2');
-                    if (companyTitle && !companyTitle.innerHTML.includes('持')) {
-                        const cleanCompanyTitle = companyTitle.textContent.replace(/[观持]/g, '').trim();
+                    if (companyTitle) {
+                        // 总是清理并添加正确的标记，确保标记正确
+                        const cleanCompanyTitle = companyTitle.textContent.replace(/[观持黑]/g, '').trim();
                         companyTitle.innerHTML = `<span class="portfolio-badge">持</span> ${cleanCompanyTitle}`;
                     }
                     portfolioBtn.style.display = 'none';
@@ -4214,9 +4349,10 @@
             }
         }
         
-        // 删除自选股
+        // 删除自选股（将持仓股数设为0）
         function deleteFromWatchlist() {
             let stockCode = '';
+            let stockName = '';
             
             // 首先尝试从DOM元素获取股票代码
             const stockCodeElement = document.getElementById('stockCode');
@@ -4232,24 +4368,65 @@
                 return;
             }
             
-            if (confirm('确定要从自选股中删除这只股票吗？')) {
-                fetch(`/api/watchlist/delete/${stockCode}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showSuccess('已从自选股中删除');
-                        // 重新检查状态
-                        checkWatchlistStatus(stockCode);
-                    } else {
-                        showError('删除失败：' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('删除自选股失败:', error);
-                    showError('删除失败，请稍后重试');
-                });
+            if (confirm('确定要从自选股中删除这只股票吗？\n（持仓股数将设为0，持仓股将改为观察股）')) {
+                // 先获取当前股票的完整信息，以确定删除后的状态
+                fetch(`/api/watchlist/stock/${encodeURIComponent(stockCode)}`)
+                    .then(response => response.json())
+                    .then(currentStockData => {
+                        console.log('获取到的股票信息:', currentStockData);
+                        let newStockType = 0; // 默认为普通股票
+                        
+                        // 如果当前是持仓股，删除后改为观察股
+                        if (currentStockData.success && currentStockData.data && currentStockData.data.stockType === 2) {
+                            newStockType = 1; // 改为观察股
+                            console.log('检测到持仓股，将改为观察股');
+                        } else {
+                            console.log('当前股票类型:', currentStockData.data ? currentStockData.data.stockType : '未知');
+                        }
+                        
+                        // 准备数据（只传递股票代码，后端会自动获取股票名称）
+                        const stockData = {
+                            stockCode: stockCode,
+                            stockType: newStockType,
+                            holdingShares: 0 // 持仓股数设为0
+                        };
+
+                        console.log('发送删除自选股数据:', stockData);
+
+                        // 调用后端API更新股票信息
+                        fetch('/api/watchlist/add', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(stockData)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const successMessage = newStockType === 1 ? 
+                                    '已从持仓股中移除（改为观察股，持仓股数已设为0）' : 
+                                    '已从自选股中删除（持仓股数已设为0）';
+                                showSuccess(successMessage);
+                                // 重新检查状态
+                                checkWatchlistStatus(stockCode);
+                                
+                                // 刷新整个自选股列表数据，确保所有过滤器都更新
+                                console.log('删除成功后，刷新自选股列表数据');
+                                loadWatchlistData();
+                            } else {
+                                showError('删除失败：' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('删除自选股失败:', error);
+                            showError('删除失败，请稍后重试');
+                        });
+                    })
+                    .catch(error => {
+                        console.error('获取股票信息失败:', error);
+                        showError('获取股票信息失败，请稍后重试');
+                    });
             }
         }
 
@@ -4282,11 +4459,11 @@
             const stockInfoTitle = document.getElementById('stockInfoTitle');
             
             if (stockNameElement && stockNameElement.textContent && stockNameElement.textContent !== '-') {
-                // A股页面有stockName元素
-                stockName = stockNameElement.textContent;
+                // A股页面有stockName元素，需要清理标记
+                stockName = stockNameElement.textContent.replace(/[观持黑]/g, '').trim();
             } else if (stockInfoTitle && stockInfoTitle.textContent) {
                 // 港股页面没有stockName元素，从标题中提取
-                stockName = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+                stockName = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
             }
             
             // 如果还是获取不到股票名称，尝试从页面其他元素获取
@@ -4294,12 +4471,18 @@
                 // 尝试从港股页面的公司名称元素获取
                 const companyNameElement = document.querySelector('.stock-info-header h2');
                 if (companyNameElement && companyNameElement.textContent) {
-                    stockName = companyNameElement.textContent.split('（')[0]; // 取中文名称部分
+                    stockName = companyNameElement.textContent.replace(/[观持黑]/g, '').trim().split('（')[0]; // 取中文名称部分
                 }
             }
             
             if (!stockCode || stockCode === '-' || !stockName || stockName === '-') {
                 showError('股票信息不完整，无法添加到自选股');
+                return;
+            }
+
+            // 如果是设为持仓股，需要输入持仓股数
+            if (stockType === 2) {
+                showHoldingSharesInputDialog(stockCode, stockName);
                 return;
             }
 
@@ -4373,9 +4556,9 @@
             const stockInfoTitle = document.getElementById('stockInfoTitle');
             
             if (stockNameElement && stockNameElement.textContent && stockNameElement.textContent !== '-') {
-                stockName = stockNameElement.textContent;
+                stockName = stockNameElement.textContent.replace(/[观持黑]/g, '').trim();
             } else if (stockInfoTitle && stockInfoTitle.textContent) {
-                stockName = stockInfoTitle.textContent.replace(/[观持]/g, '').trim();
+                stockName = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
             }
             
             if (!stockCode || stockCode === '-' || !stockName || stockName === '-') {
@@ -4446,7 +4629,7 @@
                 const stockInfoTitle = document.getElementById('stockInfoTitle');
                 
                 if (stockNameElement && stockNameElement.textContent && stockNameElement.textContent !== '-') {
-                    stockName = stockNameElement.textContent;
+                    stockName = stockNameElement.textContent.replace(/[观持黑]/g, '').trim();
                 } else if (stockInfoTitle && stockInfoTitle.textContent) {
                     stockName = stockInfoTitle.textContent.replace(/[观持黑]/g, '').trim();
                 }
@@ -4531,6 +4714,91 @@
             .catch(error => {
                 console.error('从黑名单移除失败:', error);
                 showError('从黑名单移除失败，请稍后重试');
+            });
+        }
+
+        // 显示持仓股数输入对话框
+        function showHoldingSharesInputDialog(stockCode, stockName) {
+            document.getElementById('holdingSharesStockCode').textContent = stockCode;
+            document.getElementById('holdingSharesStockName').textContent = stockName;
+            document.getElementById('holdingSharesInput').value = '';
+            document.getElementById('holdingSharesDialog').style.display = 'flex';
+            
+            // 聚焦到输入框
+            setTimeout(() => {
+                document.getElementById('holdingSharesInput').focus();
+            }, 100);
+        }
+
+        // 关闭持仓股数输入对话框
+        function closeHoldingSharesDialog() {
+            document.getElementById('holdingSharesDialog').style.display = 'none';
+        }
+
+        // 确认持仓股数
+        function confirmHoldingShares() {
+            const stockCode = document.getElementById('holdingSharesStockCode').textContent;
+            const stockName = document.getElementById('holdingSharesStockName').textContent;
+            const holdingShares = document.getElementById('holdingSharesInput').value;
+
+            // 验证输入
+            if (!holdingShares || holdingShares === '') {
+                showError('请输入持仓股数');
+                return;
+            }
+
+            const shares = parseInt(holdingShares);
+            if (isNaN(shares) || shares < 0) {
+                showError('请输入有效的持仓股数（大于等于0的整数）');
+                return;
+            }
+
+            // 关闭对话框
+            closeHoldingSharesDialog();
+
+            // 准备数据
+            const stockData = {
+                stockCode: stockCode,
+                stockName: stockName,
+                stockType: 2, // 持仓股
+                holdingShares: shares
+            };
+
+            console.log('发送持仓股数据:', stockData);
+
+            // 调用后端API添加持仓股
+            fetch('/api/watchlist/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(stockData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(`已成功${data.message.includes('更新') ? '更新' : '添加'}为持仓股，持仓股数：${shares.toLocaleString()}股`);
+                    // 重新检查状态
+                    checkWatchlistStatus(stockCode);
+                    
+                    // 如果自选股列表当前是打开的，自动刷新数据
+                    const watchlistSection = document.getElementById('watchlistSection');
+                    if (watchlistSection && watchlistSection.style.display === 'block') {
+                        console.log('持仓股添加成功后，自动刷新列表数据');
+                        loadWatchlistData();
+                        
+                        // 提示用户该股票需要先进行分析才能显示财务指标
+                        setTimeout(() => {
+                            showSuccess('提示：新添加的股票需要先进行分析才能显示财务指标数据');
+                        }, 1000);
+                    }
+                } else {
+                    showError('操作失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('添加持仓股失败:', error);
+                showError('添加持仓股失败，请稍后重试');
             });
         }
 
@@ -6553,6 +6821,17 @@
             
             // 初始化市危率分布图表
             initMarketRiskDistributionChart();
+            
+            // 初始化持仓股数输入框回车键监听
+            const holdingSharesInput = document.getElementById('holdingSharesInput');
+            if (holdingSharesInput) {
+                holdingSharesInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        confirmHoldingShares();
+                    }
+                });
+                console.log('持仓股数输入框回车键监听器设置成功');
+            }
         });
 
         // 全局变量：跟踪页面状态
@@ -7241,6 +7520,9 @@
             const tableBody = document.getElementById('watchlistTableBody');
             tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #6b7280;">正在加载自选股数据...</td></tr>';
             
+            // 清除缓存数据，确保获取最新数据
+            originalWatchlistData = [];
+            
             // 调用后端API获取自选股数据
             fetch('/api/watchlist/all')
                 .then(response => {
@@ -7388,7 +7670,7 @@
                 html += `
                     <tr>
                         <td>${stock.stockCode}</td>
-                        <td>${stock.stockName}</td>
+                        <td>${truncateStockName(stock.stockName)}</td>
                         <td><span class="stock-type-badge ${stockTypeClass}">${stockTypeText}</span></td>
                         <td>${formatPeTtm(stock.peTtm)}</td>
                         <td>${formatNumber(stock.roe)}%</td>
@@ -7572,6 +7854,15 @@
         }
 
         /**
+         * 截断股票名称，保留前4个字符，后面加省略号
+         */
+        function truncateStockName(stockName) {
+            if (!stockName) return '-';
+            if (stockName.length <= 4) return stockName;
+            return stockName.substring(0, 4) + '...';
+        }
+
+        /**
          * 更新表头排序样式
          */
         function updateSortHeaders(activeField, direction) {
@@ -7640,7 +7931,7 @@
                 html += `
                     <tr>
                         <td>${stock.stockCode}</td>
-                        <td>${stock.stockName}</td>
+                        <td>${truncateStockName(stock.stockName)}</td>
                         <td><span class="stock-type-badge ${stockTypeClass}">${stockTypeText}</span></td>
                         <td>${formatPeTtm(stock.peTtm)}</td>
                         <td>${formatNumber(stock.roe)}%</td>
@@ -7975,34 +8266,71 @@
      * 从自选股中移除股票（将type改为0）
      */
     function removeFromWatchlist(stockCode, stockName) {
-        if (confirm(`确定要从自选股中移除 ${stockName}(${stockCode}) 吗？`)) {
+        if (confirm(`确定要从自选股中移除 ${stockName}(${stockCode}) 吗？\n（持仓股数将设为0）`)) {
             console.log('开始移除自选股:', stockCode, stockName);
             
-            // 调用后端API将股票类型改为0
-            fetch(`/api/watchlist/remove-from-watchlist/${stockCode}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                console.log('API响应状态:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('API响应数据:', data);
-                if (data.success) {
-                    showSuccess('已从自选股中移除');
-                    // 立即从表格中移除该行
-                    removeStockRowFromTable(stockCode);
-                } else {
-                    showError('移除失败: ' + (data.message || '未知错误'));
-                }
-            })
-            .catch(error => {
-                console.error('移除自选股失败:', error);
-                showError('移除失败，请稍后重试');
-            });
+            // 先获取当前股票的完整信息，以确定删除后的状态
+            fetch(`/api/watchlist/stock/${encodeURIComponent(stockCode)}`)
+                .then(response => response.json())
+                .then(currentStockData => {
+                    console.log('获取到的股票信息:', currentStockData);
+                    let newStockType = 0; // 默认为普通股票
+                    
+                    // 如果当前是持仓股，删除后改为观察股
+                    if (currentStockData.success && currentStockData.data && currentStockData.data.stockType === 2) {
+                        newStockType = 1; // 改为观察股
+                        console.log('检测到持仓股，将改为观察股');
+                    } else {
+                        console.log('当前股票类型:', currentStockData.data ? currentStockData.data.stockType : '未知');
+                    }
+                    
+                    // 准备数据（只传递股票代码，后端会自动获取股票名称）
+                    const stockData = {
+                        stockCode: stockCode,
+                        stockType: newStockType,
+                        holdingShares: 0 // 持仓股数设为0
+                    };
+
+                    console.log('发送移除自选股数据:', stockData);
+                    
+                    // 调用后端API更新股票信息
+                    fetch('/api/watchlist/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(stockData)
+                    })
+                    .then(response => {
+                        console.log('API响应状态:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('API响应数据:', data);
+                        if (data.success) {
+                            const successMessage = newStockType === 1 ? 
+                                '已从持仓股中移除（改为观察股，持仓股数已设为0）' : 
+                                '已从自选股中移除（持仓股数已设为0）';
+                            showSuccess(successMessage);
+                            // 立即从表格中移除该行
+                            removeStockRowFromTable(stockCode);
+                            
+                            // 刷新整个自选股列表数据，确保所有过滤器都更新
+                            console.log('删除成功后，刷新自选股列表数据');
+                            loadWatchlistData();
+                        } else {
+                            showError('移除失败: ' + (data.message || '未知错误'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('移除自选股失败:', error);
+                        showError('移除失败，请稍后重试');
+                    });
+                })
+                .catch(error => {
+                    console.error('获取股票信息失败:', error);
+                    showError('获取股票信息失败，请稍后重试');
+                });
         }
     }
 
@@ -8039,6 +8367,27 @@
         }
     }
     </script>
+
+    <!-- 持仓股数输入对话框 -->
+    <div id="holdingSharesDialog" class="holding-shares-dialog" style="display: none;">
+        <div class="holding-shares-dialog-content">
+            <div class="holding-shares-dialog-header">
+                <h3>设置持仓股数</h3>
+                <button class="holding-shares-dialog-close" onclick="closeHoldingSharesDialog()">&times;</button>
+            </div>
+            <div class="holding-shares-dialog-body">
+                <p>请输入 <span id="holdingSharesStockName"></span> (<span id="holdingSharesStockCode"></span>) 的持仓股数：</p>
+                <div class="holding-shares-input-group">
+                    <input type="number" id="holdingSharesInput" placeholder="请输入持仓股数" min="0" step="100">
+                    <span class="holding-shares-unit">股</span>
+                </div>
+                <div class="holding-shares-dialog-actions">
+                    <button class="holding-shares-btn holding-shares-btn-cancel" onclick="closeHoldingSharesDialog()">取消</button>
+                    <button class="holding-shares-btn holding-shares-btn-confirm" onclick="confirmHoldingShares()">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -1,1 +1,1 @@
-select * FROM market_risk_ratio where date = '2025-08-20';
+DELETE FROM stock_watchlist where stock_code = '06862';
