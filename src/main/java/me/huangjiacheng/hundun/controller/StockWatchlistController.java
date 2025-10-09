@@ -19,6 +19,9 @@ public class StockWatchlistController {
 
     @Autowired
     private StockWatchlistService stockWatchlistService;
+    
+    @Autowired
+    private HoldingsAnalysisService holdingsAnalysisService;
 
     /**
      * 添加或更新自选股

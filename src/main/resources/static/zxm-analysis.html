@@ -608,6 +608,17 @@
             border-color: #b45309;
         }
 
+        /* 持仓分析按钮样式 */
+        .nav-button.holdings-analysis-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-color: #059669;
+        }
+
+        .nav-button.holdings-analysis-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            border-color: #047857;
+        }
+
         .analyze-btn {
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             color: white;
@@ -2017,6 +2028,58 @@
             border-top: 1px solid #e5e7eb;
             background: #f9fafb;
         }
+
+        /* 持仓分析样式 */
+        .holdings-summary {
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(14, 165, 233, 0.1);
+        }
+
+        .summary-card h3 {
+            margin: 0 0 16px 0;
+            color: #0369a1;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0f2fe;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            color: #0369a1;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .holdings-table-container {
+            margin-top: 20px;
+        }
     </style>
 </head>
 
@@ -2032,6 +2095,9 @@
             <div class="nav-section">
                 <button class="nav-button market-overview-btn" onclick="showMarketOverview()">
                     市场概况
+                </button>
+                <button class="nav-button holdings-analysis-btn" onclick="showHoldingsAnalysis()">
+                    持仓分析
                 </button>
                 <button class="nav-button" onclick="showWatchlist()">
                     自选股
@@ -2239,7 +2305,70 @@
             </div>
         </div>
 
-        <div id="error" class="error" style="display: none;"></div>
+        <div id="error" class="error" style="display: none;">        </div>
+
+        <!-- 持仓分析区域 -->
+        <div id="holdingsAnalysisSection" class="watchlist-section" style="display: none;">
+            <div class="watchlist-header">
+                <h2 class="watchlist-title">持仓分析</h2>
+                <button class="watchlist-close" onclick="hideHoldingsAnalysis()">关闭</button>
+            </div>
+            <div id="holdingsAnalysisContainer">
+                <div class="holdings-summary">
+                    <div class="summary-card">
+                        <h3>持仓概览</h3>
+                        <div class="summary-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">持仓股票数量</span>
+                                <span class="stat-value" id="totalHoldings">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">总市值</span>
+                                <span class="stat-value" id="totalMarketValue">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">平均ROE</span>
+                                <span class="stat-value" id="avgRoe">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">平均预期收益率</span>
+                                <span class="stat-value" id="avgExpectedReturn">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="holdings-table-container">
+                    <table class="watchlist-table">
+                        <thead>
+                            <tr>
+                                <th>股票代码</th>
+                                <th>股票名称</th>
+                                <th>持仓数量</th>
+                                <th>当前价格</th>
+                                <th>市值</th>
+                                <th>占比</th>
+                                <th class="sortable" data-field="peTtm" onclick="sortHoldingsTable('peTtm')">
+                                    市盈率TTM
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable" data-field="roe" onclick="sortHoldingsTable('roe')">
+                                    ROE(%)
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable" data-field="expectedReturn" onclick="sortHoldingsTable('expectedReturn')">
+                                    预期收益率
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdingsTableBody">
+                            <!-- 数据将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
         <!-- 股票基本信息展示区域 -->
         <div id="stockInfoSection" class="stock-info-section" style="display: none;">
@@ -7618,6 +7747,148 @@
                 .then(data => {
                     if (data.success && data.data) {
                         // 过滤出黑名单股票（type=3）
+
+        /**
+         * 显示持仓分析页面
+         */
+        function showHoldingsAnalysis() {
+            console.log('显示持仓分析页面');
+            
+            // 记住当前页面状态
+            let previousState = 'welcome';
+            if (document.getElementById('chartContainer').style.display === 'block') {
+                previousState = 'analysis';
+            } else if (document.getElementById('welcomeSection').style.display === 'block') {
+                previousState = 'welcome';
+            }
+            
+            // 保存之前的页面状态，用于关闭时恢复
+            window.previousPageBeforeHoldingsAnalysis = previousState;
+            
+            // 使用智能页面切换动画
+            smartPageTransition('holdingsAnalysis');
+            
+            // 更新状态
+            updatePageState('holdingsAnalysis');
+            
+            // 加载持仓分析数据
+            loadHoldingsAnalysisData();
+            
+            console.log('持仓分析页面显示完成，当前页面状态:', currentPageState);
+        }
+
+        /**
+         * 隐藏持仓分析页面
+         */
+        function hideHoldingsAnalysis() {
+            // 隐藏持仓分析区域
+            const holdingsAnalysisSection = document.getElementById('holdingsAnalysisSection');
+            holdingsAnalysisSection.style.display = 'none';
+            
+            // 快速恢复到之前的页面状态
+            if (window.previousPageBeforeHoldingsAnalysis) {
+                console.log('快速恢复到之前的页面状态:', window.previousPageBeforeHoldingsAnalysis);
+                updatePageState(window.previousPageBeforeHoldingsAnalysis);
+                
+                // 立即显示对应的页面
+                if (window.previousPageBeforeHoldingsAnalysis === 'analysis') {
+                    const chartContainer = document.getElementById('chartContainer');
+                    const stockInfoSection = document.getElementById('stockInfoSection');
+                    if (chartContainer) chartContainer.style.display = 'block';
+                    if (stockInfoSection) stockInfoSection.style.display = 'block';
+                } else if (window.previousPageBeforeHoldingsAnalysis === 'welcome') {
+                    const welcomeSection = document.getElementById('welcomeSection');
+                    if (welcomeSection) welcomeSection.style.display = 'block';
+                }
+                
+                // 清除保存的状态
+                window.previousPageBeforeHoldingsAnalysis = null;
+            } else {
+                console.log('没有保存的之前状态，使用默认恢复逻辑');
+                // 如果没有保存的状态，使用默认的恢复逻辑
+                restorePageState();
+            }
+            
+            console.log('隐藏持仓分析页面完成，当前页面状态:', currentPageState);
+        }
+
+        /**
+         * 加载持仓分析数据
+         */
+        async function loadHoldingsAnalysisData() {
+            try {
+                showLoading('正在加载持仓分析数据', '请稍候...');
+                
+                // 调用后端API获取持仓分析数据
+                const response = await fetch('/api/holdings/analysis');
+                if (!response.ok) {
+                    throw new Error('获取持仓分析数据失败');
+                }
+                
+                const data = await response.json();
+                
+                // 渲染持仓分析数据
+                renderHoldingsAnalysis(data);
+                
+                hideLoading();
+            } catch (error) {
+                console.error('加载持仓分析数据失败:', error);
+                hideLoading();
+                showError('加载失败', '获取持仓分析数据时出错。');
+            }
+        }
+
+        /**
+         * 渲染持仓分析数据
+         */
+        function renderHoldingsAnalysis(data) {
+            // 更新概览统计
+            document.getElementById('totalHoldings').textContent = data.totalHoldings || 0;
+            document.getElementById('totalMarketValue').textContent = formatMarketValue(data.totalMarketValue || 0);
+            document.getElementById('avgRoe').textContent = formatNumber(data.avgRoe || 0) + '%';
+            document.getElementById('avgExpectedReturn').textContent = formatNumber(data.avgExpectedReturn || 0) + '%';
+            
+            // 渲染持仓表格
+            const tableBody = document.getElementById('holdingsTableBody');
+            tableBody.innerHTML = '';
+            
+            if (!data.holdings || data.holdings.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center;">暂无持仓数据</td></tr>';
+                return;
+            }
+            
+            data.holdings.forEach(holding => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${holding.stockCode}</td>
+                    <td>${holding.stockName}</td>
+                    <td>${formatNumber(holding.quantity)}</td>
+                    <td>¥${formatNumber(holding.currentPrice)}</td>
+                    <td>${formatMarketValue(holding.marketValue)}</td>
+                    <td>${formatNumber(holding.weight)}%</td>
+                    <td>${formatNumber(holding.peTtm)}</td>
+                    <td>${formatNumber(holding.roe)}%</td>
+                    <td>${formatNumber(holding.expectedReturn)}%</td>
+                    <td>
+                        <button class="detail-btn" onclick="analyzeStockFromHoldings('${holding.stockCode}', '${holding.stockName}')">
+                            查看详情
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        /**
+         * 从持仓分析页面分析股票
+         */
+        function analyzeStockFromHoldings(stockCode, stockName) {
+            // 隐藏持仓分析页面
+            hideHoldingsAnalysis();
+            
+            // 分析股票
+            analyzeStock(stockCode);
+        }
                         const blacklistData = data.data.filter(stock => stock.stockType === 3);
                         console.log('黑名单数据:', blacklistData);
                         displayBlacklistData(blacklistData);
