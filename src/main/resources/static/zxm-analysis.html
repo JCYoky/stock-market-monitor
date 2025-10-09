@@ -2966,13 +2966,9 @@
             else if (num >= 1e4) {
                 return (num / 1e4).toFixed(2) + '万股';
             }
-            // 小于1万的股本，如果是整数则显示整数，否则保留两位小数
+            // 小于1万的股本，统一保留两位小数
             else {
-                if (Number.isInteger(num)) {
-                    return num.toLocaleString() + '股';
-                } else {
-                    return num.toFixed(2) + '股';
-                }
+                return num.toFixed(2) + '股';
             }
         }
 
@@ -2993,13 +2989,9 @@
             else if (num >= 1e4) {
                 return '¥' + (num / 1e4).toFixed(2) + '万';
             }
-            // 小于1万的市值，如果是整数则显示整数，否则保留两位小数
+            // 小于1万的市值，统一保留两位小数
             else {
-                if (Number.isInteger(num)) {
-                    return '¥' + num.toLocaleString();
-                } else {
-                    return '¥' + num.toFixed(2);
-                }
+                return '¥' + num.toFixed(2);
             }
         }
 
@@ -8182,22 +8174,11 @@
                 return (num / 1e4).toFixed(2) + '万';
             }
             
-            // 处理小数精度
-            if (num === 0) return '0';
+            // 统一保留两位小数
+            if (num === 0) return '0.00';
             
-            
-            if (absNum < 0.01) return num.toFixed(4);
-            if (absNum < 0.1) return num.toFixed(3);
-            if (absNum < 1) return num.toFixed(2);
-            if (absNum < 10) return num.toFixed(2);
-            if (absNum < 100) return num.toFixed(1);
-            
-            // 对于大于等于100的整数，使用千位分隔符
-            if (Number.isInteger(num)) {
-                return num.toLocaleString();
-            }
-            
-            return num.toFixed(0);
+            // 对于所有其他数值，统一保留两位小数
+            return num.toFixed(2);
         }
 
         /**
