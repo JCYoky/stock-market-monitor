@@ -7021,6 +7021,7 @@
             const stockInfoSection = document.getElementById('stockInfoSection');
             const watchlistSection = document.getElementById('watchlistSection');
             const blacklistSection = document.getElementById('blacklistSection');
+            const holdingsAnalysisSection = document.getElementById('holdingsAnalysisSection');
             
             // 确定需要隐藏的元素
             let hideElements = [];
@@ -7028,20 +7029,24 @@
             
             switch (targetState) {
                 case 'welcome':
-                    hideElements = [chartContainer, stockInfoSection, watchlistSection, blacklistSection];
+                    hideElements = [chartContainer, stockInfoSection, watchlistSection, blacklistSection, holdingsAnalysisSection];
                     showElement = welcomeSection;
                     break;
                 case 'analysis':
-                    hideElements = [welcomeSection, watchlistSection, blacklistSection];
+                    hideElements = [welcomeSection, watchlistSection, blacklistSection, holdingsAnalysisSection];
                     showElement = chartContainer;
                     break;
                 case 'watchlist':
-                    hideElements = [welcomeSection, chartContainer, stockInfoSection, blacklistSection];
+                    hideElements = [welcomeSection, chartContainer, stockInfoSection, blacklistSection, holdingsAnalysisSection];
                     showElement = watchlistSection;
                     break;
                 case 'blacklist':
-                    hideElements = [welcomeSection, chartContainer, stockInfoSection, watchlistSection];
+                    hideElements = [welcomeSection, chartContainer, stockInfoSection, watchlistSection, holdingsAnalysisSection];
                     showElement = blacklistSection;
+                    break;
+                case 'holdingsAnalysis':
+                    hideElements = [welcomeSection, chartContainer, stockInfoSection, watchlistSection, blacklistSection];
+                    showElement = holdingsAnalysisSection;
                     break;
             }
             
@@ -7844,9 +7849,9 @@
         function renderHoldingsAnalysis(data) {
             // 更新概览统计
             document.getElementById('totalHoldings').textContent = data.totalHoldings || 0;
-            document.getElementById('totalMarketValue').textContent = formatMarketValue(data.totalMarketValue || 0);
-            document.getElementById('avgRoe').textContent = formatNumber(data.avgRoe || 0) + '%';
-            document.getElementById('avgExpectedReturn').textContent = formatNumber(data.avgExpectedReturn || 0) + '%';
+            document.getElementById('totalMarketValue').textContent = '-';
+            document.getElementById('avgRoe').textContent = '-';
+            document.getElementById('avgExpectedReturn').textContent = '-';
             
             // 渲染持仓表格
             const tableBody = document.getElementById('holdingsTableBody');
@@ -7862,10 +7867,10 @@
                 row.innerHTML = `
                     <td>${holding.stockCode}</td>
                     <td>${holding.stockName}</td>
-                    <td>${formatNumber(holding.quantity)}</td>
-                    <td>¥${formatNumber(holding.currentPrice)}</td>
-                    <td>${formatMarketValue(holding.marketValue)}</td>
-                    <td>${formatNumber(holding.weight)}%</td>
+                    <td>${holding.holdingShares || 0}</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
                     <td>${formatNumber(holding.peTtm)}</td>
                     <td>${formatNumber(holding.roe)}%</td>
                     <td>${formatNumber(holding.expectedReturn)}%</td>
