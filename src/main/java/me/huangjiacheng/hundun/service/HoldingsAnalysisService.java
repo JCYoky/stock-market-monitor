@@ -66,7 +66,7 @@ public class HoldingsAnalysisService {
                 holdingData.put("stockName", holding.getStockName());
                 holdingData.put("quantity", holding.getHoldingShares() != null ? holding.getHoldingShares() : 0);
                 holdingData.put("currentPrice", currentPrice);
-                holdingData.put("marketValue", marketValue);
+                holdingData.put("marketValue", marketValue.doubleValue());
                 
                 holdingsList.add(holdingData);
             }
@@ -79,12 +79,12 @@ public class HoldingsAnalysisService {
                     weight = marketValue.divide(totalMarketValue, 4, RoundingMode.HALF_UP)
                             .multiply(new BigDecimal("100"));
                 }
-                holdingData.put("weight", weight);
+                holdingData.put("weight", weight.doubleValue());
             }
             
             result.put("success", true);
             result.put("totalHoldings", holdings.size());
-            result.put("totalMarketValue", totalMarketValue);
+            result.put("totalMarketValue", totalMarketValue.doubleValue());
             result.put("holdings", holdingsList);
             
         } catch (Exception e) {

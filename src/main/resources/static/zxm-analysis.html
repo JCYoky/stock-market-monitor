@@ -7916,6 +7916,8 @@
          * 渲染持仓分析数据
          */
         function renderHoldingsAnalysis(data) {
+            console.log('持仓分析数据:', data);
+            
             // 更新概览统计
             document.getElementById('totalHoldings').textContent = data.totalHoldings || 0;
             document.getElementById('totalMarketValue').textContent = formatMarketValue(data.totalMarketValue || 0);
@@ -7931,15 +7933,18 @@
                 return;
             }
             
-            data.holdings.forEach(holding => {
+            console.log('持仓数据数量:', data.holdings.length);
+            
+            data.holdings.forEach((holding, index) => {
+                console.log(`持仓数据 ${index + 1}:`, holding);
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${holding.stockCode}</td>
-                    <td>${holding.stockName}</td>
-                    <td>${formatNumber(holding.quantity)}</td>
-                    <td>¥${formatNumber(holding.currentPrice)}</td>
-                    <td>${formatMarketValue(holding.marketValue)}</td>
-                    <td>${formatNumber(holding.weight)}%</td>
+                    <td>${holding.stockCode || '-'}</td>
+                    <td>${holding.stockName || '-'}</td>
+                    <td>${formatNumber(holding.quantity || 0)}</td>
+                    <td>¥${formatNumber(holding.currentPrice || 0)}</td>
+                    <td>${formatMarketValue(holding.marketValue || 0)}</td>
+                    <td>${formatNumber(holding.weight || 0)}%</td>
                     <td>-</td>
                     <td>-</td>
                     <td>-</td>
