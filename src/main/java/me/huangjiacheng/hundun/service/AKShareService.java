@@ -3,11 +3,14 @@ package me.huangjiacheng.hundun.service;
 import me.huangjiacheng.hundun.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import me.huangjiacheng.hundun.util.CalendarUtil;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -74,6 +77,58 @@ public class AKShareService {
         return cleanCode; // 没有前缀，直接返回
     }
 
+    /**
+     * 获取股票最新价格
+     * @param symbol 股票代码
+     * @return 最新价格（人民币计价，单位：元）
+     */
+    public Double getStockLatestPrice(String symbol) {
+        if (symbol == null || symbol.trim().isEmpty()) {
+            return 0.0;
+        }
+        
+        // 优化：减少日期计算，只获取最近7天的数据
+        String endDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String startDate = LocalDateTime.now().minusDays(7).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        
+        AKShareRequest request = new AKShareRequest();
+        request.setSymbol(symbol);
+        request.setExtraParam("start_date", startDate);
+        request.setExtraParam("end_date", endDate);
+        
+        // 根据股票代码长度选择API
+        String apiEndpoint = (symbol.length() == 6) ? "stock_zh_a_hist" : "stock_hk_hist";
+        
+        try {
+            String json = akShareClient.fetchData(apiEndpoint, request);
+            if (json == null || json.trim().isEmpty()) {
+                return 0.0;
+            }
+            
+            JsonNode root = objectMapper.readTree(json);
+            if (!root.isArray() || root.size() == 0) {
+                return 0.0;
+            }
+            
+            // 获取最后一条记录的收盘价
+            JsonNode lastRecord = root.get(root.size() - 1);
+            JsonNode closePriceNode = lastRecord.get("收盘");
+            
+            if (closePriceNode == null || closePriceNode.isNull()) {
+                return 0.0;
+            }
+            
+            return Double.parseDouble(closePriceNode.asText());
+            
+        } catch (NumberFormatException e) {
+            // 价格格式错误
+            return 0.0;
+        } catch (Exception e) {
+            // 其他异常，记录日志但不打印堆栈
+            return 0.0;
+        }
+    }
+    
     /**
      * 获取股票实际控制人信息
      * @param symbol 股票代码
